@@ -106,7 +106,7 @@ const loginError = ref('')
 const passwordError = ref('')
 const isLoading = ref(false)
 
-// URL Backend Go (Sesuaikan jika port partner Anda berbeda)
+// URL Backend Go
 const API_BASE_URL = 'http://192.168.69.139:8080/api'
 
 const handleNextOrLogin = async () => {
@@ -123,7 +123,6 @@ const handleNextOrLogin = async () => {
     const isNumber = /^[0-9+]+$/.test(cleanInput)
     isPhoneLogin.value = isNumber
 
-    // Jika login via telepon, otomatis panggil API kirim OTP ke backend partner
     if (isNumber) {
       isLoading.value = true
       try {
@@ -138,7 +137,6 @@ const handleNextOrLogin = async () => {
           loginError.value = result.error || 'Gagal mengirim OTP'
           return
         }
-        // Jika sukses kirim OTP, lanjut ke step 2
         step.value = 2
       } catch (err) {
         loginError.value = 'Tidak dapat terhubung ke server backend'
@@ -146,7 +144,6 @@ const handleNextOrLogin = async () => {
         isLoading.value = false
       }
     } else {
-      // Jika email, langsung lanjut ke step 2 (input password)
       step.value = 2
     }
 
@@ -168,14 +165,12 @@ const handleNextOrLogin = async () => {
       let payload = {}
 
       if (isPhoneLogin.value) {
-        // Endpoint Verifikasi OTP dari Go backend
         endpoint = `${API_BASE_URL}/verify-otp`
         payload = {
           phone: loginIdentifier.value.trim(),
           otp: otpCode.value.trim()
         }
       } else {
-        // Endpoint Login Email dari Go backend
         endpoint = `${API_BASE_URL}/login`
         payload = {
           email: loginIdentifier.value.trim(),
@@ -192,13 +187,31 @@ const handleNextOrLogin = async () => {
       const result = await response.json()
 
       if (response.ok) {
-        // Simpan token JWT dan data user ke localStorage sesuai respons Go backend
-        localStorage.setItem('token', result.token)
-        localStorage.setItem('adminName', result.data.Name)
-        localStorage.setItem('adminRole', result.data.Role)
+        // Ambil data user & role dari respons backend
+        const userData = result.data || result.user || {}
+        const userRole = (userData.Role || userData.role || result.role || '').toLowerCase()
+        const userName = userData.Name || userData.name || result.name || 'User'
 
-        // Redirect ke dashboard admin Barberly
-        router.push('/admin/dashboard')
+        // Simpan data autentikasi ke localStorage
+        localStorage.setItem('token', result.token)
+        localStorage.setItem('role', userRole)
+        localStorage.setItem('user_name', userName)
+
+        // Simpan penanda jika login via HP
+        if (isPhoneLogin.value) {
+          localStorage.setItem('is_phone_login', 'true')
+        } else {
+          localStorage.removeItem('is_phone_login')
+        }
+
+        // --- PENYESUAIAN RUTE LOGIN ---
+        if (userRole === 'admin') {
+          // Jika akun Admin -> Ke Dashboard Admin
+          router.push('/admin/dashboard')
+        } else {
+          // Jika akun Customer / Pelanggan -> Ke Halaman Home
+          router.push('/')
+        }
       } else {
         passwordError.value = result.error || 'Autentikasi gagal'
       }

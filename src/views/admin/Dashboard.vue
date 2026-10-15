@@ -9,19 +9,21 @@
     <div class="stats-grid">
       <div class="stat-card">
         <p class="stat-title">Total Pelanggan</p>
-        <h3 class="stat-value">{{ stats.totalCustomers }}</h3>
+        <h3 class="stat-value">{{ isLoadingStats ? '...' : stats.totalCustomers }}</h3>
       </div>
       <div class="stat-card">
         <p class="stat-title">Total Booking</p>
-        <h3 class="stat-value">{{ stats.totalBookings }}</h3>
+        <h3 class="stat-value">{{ isLoadingStats ? '...' : stats.totalBookings }}</h3>
       </div>
       <div class="stat-card">
         <p class="stat-title">Total Layanan</p>
-        <h3 class="stat-value">{{ stats.totalServices }}</h3>
+        <h3 class="stat-value">{{ isLoadingStats ? '...' : stats.totalServices }}</h3>
       </div>
       <div class="stat-card">
         <p class="stat-title">Total Pendapatan</p>
-        <h3 class="stat-value">Rp {{ stats.totalRevenue.toLocaleString('id-ID') }}</h3>
+        <h3 class="stat-value">
+          {{ isLoadingStats ? '...' : 'Rp ' + stats.totalRevenue.toLocaleString('id-ID') }}
+        </h3>
       </div>
     </div>
 
@@ -91,18 +93,50 @@ const isPhoneLogin = ref(localStorage.getItem('is_phone_login') === 'true')
 // Variabel data reaktif
 const recentBookings = ref([])
 const stats = ref({
-  totalCustomers: 1240,
+  totalCustomers: 0,
   totalBookings: 0,
-  totalServices: 8,
-  totalRevenue: 14500000
+  totalServices: 0,
+  totalRevenue: 0
 })
 
 const isLoading = ref(true)
+const isLoadingStats = ref(true)
 const errorMessage = ref('')
 
 // Ganti IP dengan IP backend Go partner Anda
 const API_BASE_URL = 'http://192.168.69.139:8080/api'
 
+// Fetch data statistik real dari backend (/admin/dashboard-stats)
+const fetchDashboardStats = async () => {
+  isLoadingStats.value = true
+  try {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    const response = await fetch(`${API_BASE_URL}/admin/dashboard-stats`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    const result = await response.json()
+
+    if (response.ok && result.data) {
+      stats.value.totalCustomers = result.data.total_pelanggan || 0
+      stats.value.totalBookings = result.data.total_booking || 0
+      stats.value.totalServices = result.data.total_layanan || 0
+      stats.value.totalRevenue = result.data.total_pendapatan || 0
+    }
+  } catch (err) {
+    console.error('Gagal mengambil data statistik:', err)
+  } finally {
+    isLoadingStats.value = false
+  }
+}
+
+// Fetch data list booking untuk tabel (/bookings)
 const fetchDashboardData = async () => {
   isLoading.value = true
   errorMessage.value = ''
@@ -168,8 +202,6 @@ const fetchDashboardData = async () => {
           status: (item.Status || item.status || 'PENDING').toUpperCase()
         }
       })
-
-      stats.value.totalBookings = recentBookings.value.length
     } else {
       errorMessage.value = result.error || 'Gagal mengambil data dari server'
     }
@@ -195,8 +227,9 @@ const updateBookingToDone = async (id) => {
     })
 
     if (response.ok) {
-      // Refresh data dari database setelah berhasil di-update
+      // Refresh data booking & statistik setelah status diperbarui
       fetchDashboardData()
+      fetchDashboardStats()
     } else {
       const errRes = await response.json().catch(() => ({}))
       alert(errRes.error || 'Gagal memperbarui status ke server.')
@@ -208,6 +241,7 @@ const updateBookingToDone = async (id) => {
 }
 
 onMounted(() => {
+  fetchDashboardStats()
   fetchDashboardData()
 })
 </script>

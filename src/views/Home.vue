@@ -1,5 +1,40 @@
 <script setup>
-console.log("URL Backend saya:", import.meta.env.VITE_API_URL);
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const isLoggedIn = ref(false)
+
+onMounted(() => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    isLoggedIn.value = true
+  }
+})
+
+// Logika Rute Tombol "Buat Booking Sekarang"
+const handleBookingClick = () => {
+  const token = localStorage.getItem('token')
+  const role = localStorage.getItem('role') || localStorage.getItem('user_role')
+
+  if (!token) {
+    // 1. Jika belum login, bawa ke halaman Login
+    router.push('/login')
+  } else if (role === 'admin') {
+    // 2. Jika login dengan akun ADMIN, bawa ke Dashboard Admin
+    router.push('/admin/dashboard')
+  } else {
+    // 3. Jika login sebagai CUSTOMER, bawa ke halaman Layanan / Home
+    router.push('/layanan')
+  }
+}
+
+// Logout
+const handleLogout = () => {
+  localStorage.clear()
+  isLoggedIn.value = false
+  router.push('/login')
+}
 </script>
 
 <template>
@@ -10,23 +45,30 @@ console.log("URL Backend saya:", import.meta.env.VITE_API_URL);
       <nav class="nav-links">
         <router-link to="/">Home</router-link>
         <router-link to="/layanan">Layanan</router-link>
-        <router-link to="/tentang">Tentang Kami</router-link>
+        <router-link to="/tentang-kami">Tentang Kami</router-link>
       </nav>
-      <router-link to="/login" class="admin-link">
-        Masuk
-      </router-link>
+
+      <!-- Kebijakan Navbar Pojok Kanan -->
+      <div class="nav-auth">
+        <router-link v-if="!isLoggedIn" to="/login" class="admin-link">
+          Masuk
+        </router-link>
+        <button v-else @click="handleLogout" class="btn-logout">
+          Keluar
+        </button>
+      </div>
     </header>
 
-    <!-- Hero Content (Tanpa Card Putih, Langsung di atas Background Redup) -->
+    <!-- Hero Content -->
     <main class="hero-section">
       <div class="hero-content">
         <h1 class="hero-title">
           Gaya Rambut Rapi,<br />
           Tampil Percaya Diri Setiap Hari.
         </h1>
-        <router-link to="/login" class="btn-booking">
+        <button @click="handleBookingClick" class="btn-booking">
           ✂️ Buat Booking Sekarang
-        </router-link>
+        </button>
       </div>
     </main>
   </div>
@@ -35,7 +77,6 @@ console.log("URL Backend saya:", import.meta.env.VITE_API_URL);
 <style scoped>
 .home-container {
   min-height: 100vh;
-  /* Menggabungkan pola latar belakang barber dengan overlay gelap agar elegan dan redup */
   background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), 
               url('../assets/images/bg-barber.png');
   background-size: 350px;
@@ -75,8 +116,14 @@ console.log("URL Backend saya:", import.meta.env.VITE_API_URL);
 }
 
 .nav-links a:hover,
-.nav-links router-link-active {
+.nav-links .router-link-active {
   color: #ffffff;
+}
+
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .admin-link {
@@ -94,6 +141,21 @@ console.log("URL Backend saya:", import.meta.env.VITE_API_URL);
   background: #ffffff;
   color: #000000;
   border-color: #ffffff;
+}
+
+.btn-logout {
+  background: #ef4444;
+  border: none;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-logout:hover {
+  background: #dc2626;
 }
 
 .hero-section {
@@ -127,10 +189,11 @@ console.log("URL Backend saya:", import.meta.env.VITE_API_URL);
   background-color: #ffc107;
   color: #000000;
   padding: 0.9rem 2.2rem;
+  border: none;
   border-radius: 50px;
   font-weight: 800;
   font-size: 0.95rem;
-  text-decoration: none;
+  cursor: pointer;
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
