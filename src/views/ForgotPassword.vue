@@ -13,10 +13,13 @@
             v-model="email" 
             placeholder="Masukkan email terdaftar" 
             required 
+            :disabled="isLoading"
           />
         </div>
 
-        <button type="submit" class="submit-btn">Kirim Instruksi</button>
+        <button type="submit" class="submit-btn" :disabled="isLoading">
+          {{ isLoading ? 'Memproses...' : 'Kirim Instruksi' }}
+        </button>
       </form>
 
       <div class="back-to-login">
@@ -31,17 +34,52 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const email = ref('')
+const isLoading = ref(false)
 const router = useRouter()
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 
-const handleResetPassword = () => {
-  alert(`Instruksi pemulihan telah dikirim ke email: ${email.value}`)
-  router.push('/login')
+const handleResetPassword = async () => {
+  if (!email.value) {
+    alert('Silakan masukkan email terdaftar Anda.')
+    return
+  }
+
+  // Lengkapi suffix @barberly.com jika user hanya mengetikkan username/nama depan
+  let fullEmail = email.value.trim()
+  if (!fullEmail.includes('@')) {
+    fullEmail += '@barberly.com'
+  }
+
+  isLoading.value = true
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email: fullEmail })
+    })
+
+    const data = await res.json()
+
+    if (res.ok) {
+      alert(`Email terverifikasi! Silakan buat password baru Anda.`)
+      // Arahkan langsung ke halaman reset-password beserta parameter email
+      router.push({ path: '/reset-password', query: { email: fullEmail } })
+    } else {
+      alert(data.error || 'Email tidak ditemukan dalam sistem.')
+    }
+  } catch (err) {
+    console.error(err)
+    alert('Gagal terhubung ke server. Pastikan backend Go sedang berjalan.')
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
 <style scoped>
-/* Pastikan body/html reset tidak ada margin bawaan di App.vue, 
-   namun kita set juga width dan height absolut di sini */
 .forgot-container {
   position: fixed;
   top: 0;
@@ -134,7 +172,12 @@ const handleResetPassword = () => {
   margin-top: 0.5rem;
 }
 
-.submit-btn:hover {
+.submit-btn:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.submit-btn:hover:not(:disabled) {
   background-color: #0000cc;
 }
 

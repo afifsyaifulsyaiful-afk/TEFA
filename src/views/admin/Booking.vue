@@ -63,7 +63,7 @@ const bookings = ref([])
 const isLoading = ref(true)
 const errorMessage = ref('')
 
-const API_BASE_URL = 'http://192.168.69.139:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 // Fungsi untuk mengambil data booking asli dari backend Go
 const fetchBookings = async () => {

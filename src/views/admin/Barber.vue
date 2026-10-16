@@ -78,7 +78,7 @@ const newBarber = ref({
   specialty: ''
 })
 
-const API_BASE_URL = 'http://192.168.69.139:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const fetchBarbers = async () => {
   isLoading.value = true

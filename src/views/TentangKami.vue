@@ -1,55 +1,130 @@
 <template>
-  <div class="tentang-container">
+  <div class="tentang-page">
     <!-- Navbar -->
     <header class="navbar">
-      <div class="brand">Barberly</div>
+      <div class="brand" @click="router.push('/')">Barberly</div>
       <nav class="nav-links">
         <router-link to="/">Home</router-link>
         <router-link to="/layanan">Layanan</router-link>
-        <router-link to="/tentang" class="active">Tentang Kami</router-link>
+        <router-link v-if="isLoggedIn" to="/my-bookings">Booking Saya</router-link>
+        <router-link to="/tentang">Tentang Kami</router-link>
       </nav>
-      <router-link to="/login" class="admin-link">
-        Masuk
-      </router-link>
+      <div class="nav-auth">
+        <button v-if="isLoggedIn" class="btn-logout" @click="handleLogout">
+          Keluar
+        </button>
+        <router-link v-else to="/login" class="btn-login">
+          Masuk
+        </router-link>
+      </div>
     </header>
 
     <!-- Main Content -->
-    <main class="content-section">
-      <div class="content-card">
-        <h1>Tentang Barberly</h1>
-        <p class="subtitle">LOOK SHARP, FEEL CONFIDENT</p>
-        
-        <div class="description">
-          <p>
-            Barberly adalah platform layanan dan pemesanan barbershop modern yang dirancang untuk memberikan pengalaman perawatan rambut terbaik bagi para pria. Kami menghadirkan kemudahan dalam memilih layanan profesional, memesan jadwal, dan mengelola gaya rambut impian Anda dengan cepat dan praktis.
-          </p>
-          <p>
-            Dengan komitmen terhadap kualitas dan kenyamanan, Barberly hadir untuk memastikan setiap pelanggan tampil rapi dan percaya diri setiap hari.
-          </p>
-        </div>
+    <main class="container">
+      <div class="top-bar">
+        <button class="btn-back" @click="router.push('/')">
+          ← Kembali ke Beranda
+        </button>
+      </div>
 
-        <router-link to="/" class="btn-back">
-          &larr; Kembali ke Beranda
-        </router-link>
+      <div class="header-section">
+        <h1>Tentang {{ shopSettings.name || 'Barberly' }} 💈</h1>
+        <p class="subjudul">Layanan Potong Rambut Modern & Profesional</p>
+      </div>
+
+      <div class="content-card">
+        <h3>Pengalaman Cukur Terbaik untuk Penampilan Maksimal</h3>
+        <p>
+          Barberly hadir untuk memberikan pengalaman cukur rambut terbaik dengan kapster profesional, 
+          peralatan higienis, dan suasana tempat yang nyaman. Kami melayani berbagai gaya potong rambut 
+          mulai dari gaya klasik hingga tren modern masa kini.
+        </p>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <h4>⏰ Jam Operasional</h4>
+            <p>{{ formattedOperatingHours }}</p>
+          </div>
+          <div class="info-item">
+            <h4>📍 Lokasi Utama</h4>
+            <p>{{ shopSettings.address }}</p>
+          </div>
+        </div>
       </div>
     </main>
   </div>
 </template>
 
 <script setup>
-// Komponen Tentang Kami
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
+const isLoggedIn = ref(false)
+
+// Lokasi default ditetapkan langsung ke lokasi kamu
+const shopSettings = ref({
+  name: 'Barberly',
+  address: 'Payolansek, Payakumbuh Barat, Kota Payakumbuh, Sumatra Barat 26219',
+  open_at: '09:00',
+  close_at: '21:00',
+  operating_hours: 'Senin - Minggu: 09:00 - 21:00 WIB'
+})
+
+// Format jam operasional
+const formattedOperatingHours = computed(() => {
+  if (shopSettings.value.open_at && shopSettings.value.close_at) {
+    return `Senin - Minggu: ${shopSettings.value.open_at} - ${shopSettings.value.close_at} WIB`
+  }
+  return shopSettings.value.operating_hours || 'Senin - Minggu: 09:00 - 21:00 WIB'
+})
+
+const fetchSettings = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/settings`)
+    if (response.ok) {
+      const result = await response.json()
+      
+      let rawData = result.data || result.settings || result
+
+      if (Array.isArray(rawData) && rawData.length > 0) {
+        rawData = rawData[0]
+      }
+
+      if (rawData && typeof rawData === 'object') {
+        const fetchedAddress = rawData.address || rawData.location || rawData.alamat
+        if (fetchedAddress) {
+          shopSettings.value.address = fetchedAddress
+        }
+        if (rawData.name) shopSettings.value.name = rawData.name
+        if (rawData.open_at) shopSettings.value.open_at = rawData.open_at
+        if (rawData.close_at) shopSettings.value.close_at = rawData.close_at
+      }
+    }
+  } catch (err) {
+    console.error('Gagal mengambil pengaturan toko dari backend:', err)
+  }
+}
+
+onMounted(() => {
+  const token = localStorage.getItem('token')
+  isLoggedIn.value = !!token
+  fetchSettings()
+})
+
+const handleLogout = () => {
+  localStorage.clear()
+  isLoggedIn.value = false
+  router.push('/login')
+}
 </script>
 
 <style scoped>
-.tentang-container {
+.tentang-page {
   min-height: 100vh;
-  background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), 
-              url('../assets/images/bg-barber.png');
-  background-size: 350px;
-  background-repeat: repeat;
   background-color: #121212;
-  display: flex;
-  flex-direction: column;
   color: #ffffff;
 }
 
@@ -67,6 +142,7 @@
   font-size: 1.6rem;
   font-family: serif;
   font-weight: bold;
+  cursor: pointer;
 }
 
 .nav-links {
@@ -82,12 +158,11 @@
 }
 
 .nav-links a:hover,
-.nav-links .active {
+.nav-links .router-link-active {
   color: #ffffff;
-  font-weight: 600;
 }
 
-.admin-link {
+.btn-login {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.4);
   color: #ffffff;
@@ -98,72 +173,101 @@
   transition: all 0.2s ease;
 }
 
-.admin-link:hover {
+.btn-login:hover {
   background: #ffffff;
   color: #000000;
-  border-color: #ffffff;
 }
 
-.content-section {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 3rem 1.5rem;
-}
-
-.content-card {
-  background: rgba(20, 20, 20, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 3rem;
-  border-radius: 8px;
-  max-width: 700px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.content-card h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
+.btn-logout {
+  background: #ef4444;
+  border: none;
   color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-.subtitle {
-  color: #ffc107;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  margin-bottom: 2rem;
+.btn-logout:hover {
+  background: #dc2626;
 }
 
-.description {
-  color: #cccccc;
-  font-size: 1rem;
-  line-height: 1.6;
-  margin-bottom: 2.5rem;
-  text-align: left;
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
 }
 
-.description p {
+.top-bar {
   margin-bottom: 1rem;
 }
 
 .btn-back {
-  display: inline-block;
-  background-color: transparent;
-  border: 1px solid #ffc107;
-  color: #ffc107;
-  padding: 0.7rem 1.8rem;
-  border-radius: 50px;
-  text-decoration: none;
+  background: none;
+  border: none;
+  color: #fbbf24;
+  font-size: 0.95rem;
   font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  padding: 0;
 }
 
 .btn-back:hover {
-  background-color: #ffc107;
-  color: #000000;
+  text-decoration: underline;
+}
+
+.header-section {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+h1 {
+  font-size: 2.2rem;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.subjudul {
+  color: #cbd5e1;
+  font-size: 1rem;
+}
+
+.content-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 2rem;
+}
+
+.content-card h3 {
+  color: #fbbf24;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.content-card p {
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  border-top: 1px solid #334155;
+  padding-top: 1.5rem;
+}
+
+.info-item h4 {
+  color: #f8fafc;
+  margin-bottom: 0.4rem;
+}
+
+.info-item p {
+  color: #94a3b8;
+  margin: 0;
 }
 </style>

@@ -16,7 +16,7 @@
         </div>
       </div>
 
-      <!-- MENU SIDEBAR (Sudah Digabung Menjadi Data Master) -->
+      <!-- MENU SIDEBAR -->
       <nav class="sidebar-menu">
         <router-link to="/admin/dashboard" class="menu-item" active-class="active">📊 Dashboard</router-link>
         <router-link to="/admin/booking" class="menu-item" active-class="active">📋 Kelola Booking</router-link>
@@ -37,15 +37,30 @@
         <button class="hamburger-btn" @click="toggleSidebar">☰</button>
         
         <div class="header-right">
-          <span class="date-badge">📅 Jumat, 25 Sep 2026</span>
+          <!-- Live Time badge -->
+          <span class="date-badge">📅 {{ currentDateTime }}</span>
           
           <!-- DROPDOWN NOTIFIKASI -->
           <div class="dropdown-wrapper">
-            <button class="icon-btn" @click="toggleNotification">🔔</button>
+            <button class="icon-btn notification-btn" @click="toggleNotification">
+              🔔
+              <span v-if="notifications.length > 0" class="notif-badge">{{ notifications.length }}</span>
+            </button>
             <div v-if="showNotification" class="dropdown-card notification-dropdown">
-              <div class="dropdown-title">Notifikasi</div>
-              <div class="dropdown-item-text">Ada booking baru masuk dari Andi</div>
-              <div class="dropdown-item-text">Pembayaran layanan selesai</div>
+              <div class="dropdown-title">Notifikasi Masuk</div>
+              
+              <div v-if="notifications.length === 0" class="dropdown-empty">
+                Tidak ada notifikasi baru
+              </div>
+
+              <div 
+                v-for="notif in notifications" 
+                :key="notif.id" 
+                class="dropdown-item-text"
+              >
+                <strong>{{ notif.user?.name || 'Pelanggan' }}</strong> memesan layanan <strong>{{ notif.service?.name || 'Cukur' }}</strong>
+                <div class="notif-time">{{ formatDate(notif.created_at || notif.booking_time) }}</div>
+              </div>
             </div>
           </div>
 
@@ -72,34 +87,97 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// State untuk interaksi tombol atas
+// State interaksi
 const isSidebarOpen = ref(true)
 const showNotification = ref(false)
 const showProfileMenu = ref(false)
 
-// Fungsi Toggle Sidebar
+// State Live Time
+const currentDateTime = ref('')
+let timer = null
+
+// State Notifikasi
+const notifications = ref([])
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const token = localStorage.getItem('token')
+
+const updateLiveTime = () => {
+  const options = { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }
+  const now = new Date()
+  currentDateTime.value = now.toLocaleDateString('id-ID', options).replace(/\./g, ':')
+}
+
+// Ambil data notifikasi dari backend saat halaman dimuat atau saat lonceng diklik
+const fetchNotifications = async () => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/admin/bookings`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (res.ok) {
+      const data = await res.json()
+      const list = data.data || data
+      notifications.value = list
+        .filter(b => b.status === 'pending' || b.Status === 'pending')
+        .slice(0, 5)
+    }
+  } catch (err) {
+    console.error('Gagal memuat notifikasi:', err)
+  }
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const d = new Date(dateString)
+  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
+}
+
+onMounted(() => {
+  updateLiveTime()
+  timer = setInterval(updateLiveTime, 1000)
+
+  // Ambil notifikasi sekali saat pertama kali dibuka
+  fetchNotifications()
+})
+
+onUnmounted(() => {
+  clearInterval(timer)
+})
+
+// Toggle Sidebar
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
 }
 
-// Fungsi Toggle Notifikasi
+// Toggle Notifikasi (sekaligus memperbarui data saat lonceng diklik)
 const toggleNotification = () => {
   showNotification.value = !showNotification.value
-  showProfileMenu.value = false // Tutup menu lain
+  showProfileMenu.value = false
+  if (showNotification.value) {
+    fetchNotifications()
+  }
 }
 
-// Fungsi Toggle Profil Admin
+// Toggle Profil Admin
 const toggleProfileMenu = () => {
   showProfileMenu.value = !showProfileMenu.value
-  showNotification.value = false // Tutup menu lain
+  showNotification.value = false
 }
 
-// Fungsi Logout
+// Logout
 const handleLogout = () => {
   router.push('/login')
 }
@@ -132,7 +210,6 @@ const handleLogout = () => {
   transition: all 0.3s ease;
 }
 
-/* Kelas untuk menyembunyikan sidebar */
 .sidebar-hidden {
   margin-left: -250px;
 }
@@ -264,12 +341,24 @@ const handleLogout = () => {
   cursor: pointer;
   padding: 0.4rem;
   border-radius: 6px;
+  position: relative;
 }
 .icon-btn:hover {
   background: #f1f5f9;
 }
 
-/* Styling Dropdown */
+.notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: bold;
+  padding: 0.1rem 0.35rem;
+  border-radius: 9999px;
+}
+
 .dropdown-wrapper {
   position: relative;
 }
@@ -297,13 +386,12 @@ const handleLogout = () => {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  width: 200px;
+  width: 260px;
   z-index: 100;
   overflow: hidden;
 }
 
 .notification-dropdown {
-  width: 240px;
   padding: 0.5rem 0;
 }
 
@@ -316,11 +404,24 @@ const handleLogout = () => {
   text-transform: uppercase;
 }
 
+.dropdown-empty {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
 .dropdown-item-text {
   padding: 0.6rem 0.8rem;
   font-size: 0.8rem;
   color: #475569;
   border-bottom: 1px solid #f8fafc;
+}
+
+.notif-time {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-top: 0.2rem;
 }
 
 .dropdown-link {

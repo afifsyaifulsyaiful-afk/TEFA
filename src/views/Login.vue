@@ -14,7 +14,7 @@
           <input 
             type="text" 
             v-model="loginIdentifier" 
-            placeholder="Cth: admin@barbershop.com atau 08123456789"
+            placeholder="Cth: Alga@barbershop.com atau 08123456789"
             :class="{ 'input-error': loginError }"
           />
           <span class="info-hint">Tips: Ketik angka (no. telp) untuk simulasi OTP, atau huruf (email) untuk password</span>
@@ -106,8 +106,7 @@ const loginError = ref('')
 const passwordError = ref('')
 const isLoading = ref(false)
 
-// URL Backend Go
-const API_BASE_URL = 'http://192.168.69.139:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const handleNextOrLogin = async () => {
   loginError.value = '' 

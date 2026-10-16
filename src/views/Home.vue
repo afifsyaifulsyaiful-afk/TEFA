@@ -45,10 +45,12 @@ const handleLogout = () => {
       <nav class="nav-links">
         <router-link to="/">Home</router-link>
         <router-link to="/layanan">Layanan</router-link>
-        <router-link to="/tentang-kami">Tentang Kami</router-link>
+        <!-- Tampilkan menu ini hanya saat user sudah login -->
+        <router-link v-if="isLoggedIn" to="/my-bookings">Booking Saya</router-link>
+        <router-link to="/tentang">Tentang Kami</router-link>
       </nav>
 
-      <!-- Kebijakan Navbar Pojok Kanan -->
+      <!-- Auth Buttons -->
       <div class="nav-auth">
         <router-link v-if="!isLoggedIn" to="/login" class="admin-link">
           Masuk
@@ -77,10 +79,15 @@ const handleLogout = () => {
 <style scoped>
 .home-container {
   min-height: 100vh;
-  background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), 
+  /* Overlay gelap + background pattern */
+  background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), 
               url('../assets/images/bg-barber.png');
-  background-size: 350px;
+  
+  /* Setting ukuran tile pattern agar tidak blur & tajam */
+  background-size: 220px;
   background-repeat: repeat;
+  background-position: top left;
+  
   background-color: #121212;
   display: flex;
   flex-direction: column;

@@ -8,12 +8,14 @@ import Home from '@/views/Home.vue'
 import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
 import ForgotPassword from '@/views/ForgotPassword.vue'
+import ResetPassword from '@/views/ResetPassword.vue'
 import ProfilSaya from '@/views/ProfilSaya.vue'
 import PublicLayanan from '@/views/Layanan.vue' 
 import Kategori from '@/views/Kategori.vue'
 import TentangKami from '@/views/TentangKami.vue'
+import MyBookings from '@/views/MyBookings.vue'
 
-// VIEWS - ADMIN (Menggunakan MasterData terpusat untuk menggantikan file lama yang dihapus)
+// VIEWS - ADMIN
 import Dashboard from '@/views/admin/Dashboard.vue'
 import MasterData from '@/views/admin/MasterData.vue' 
 import Booking from '@/views/admin/Booking.vue'
@@ -21,7 +23,7 @@ import Laporan from '@/views/admin/Laporan.vue'
 import Settings from '@/views/admin/Settings.vue'
 
 const routes = [
-  // --- PUBLIC ROUTES ---
+  // --- PUBLIC / PELANGGAN ROUTES ---
   {
     path: '/',
     name: 'Home',
@@ -43,6 +45,11 @@ const routes = [
     component: ForgotPassword
   },
   {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPassword
+  },
+  {
     path: '/profil',
     name: 'ProfilSaya',
     component: ProfilSaya
@@ -50,7 +57,12 @@ const routes = [
   {
     path: '/layanan',
     name: 'Layanan',
-    component: PublicLayanan
+    component: PublicLayanan // UI Pilihan Layanan & Booking untuk Pelanggan
+  },
+  {
+    path: '/my-bookings',
+    name: 'MyBookings',
+    component: MyBookings
   },
   {
     path: '/tentang',
@@ -72,20 +84,18 @@ const routes = [
         name: 'AdminDashboard',
         component: Dashboard
       },
-      // Rute Utama Data Master yang baru digabungkan di sidebar
       {
         path: 'master',
         name: 'AdminMaster',
         component: MasterData
       },
-      // Rute lama (opsional jika masih diakses, diarahkan ke MasterData juga)
       {
-        path: 'barber',
+        path: 'master-barber',
         name: 'AdminBarber',
         component: MasterData 
       },
       {
-        path: 'services',
+        path: 'master-services',
         name: 'AdminLayanan',
         component: MasterData 
       },
@@ -95,12 +105,12 @@ const routes = [
         component: Kategori
       },
       {
-        path: 'schedule',
+        path: 'master-schedule',
         name: 'AdminJadwalBarber',
         component: MasterData 
       },
       {
-        path: 'customers',
+        path: 'master-customers',
         name: 'AdminPelanggan',
         component: MasterData 
       },
@@ -114,7 +124,6 @@ const routes = [
         name: 'AdminLaporan',
         component: Laporan
       },
-      // Rute reviews diarahkan langsung ke halaman Laporan gabungan
       {
         path: 'reviews',
         name: 'AdminReviews',

@@ -5,61 +5,87 @@
       <p class="subtitle">Buat akun untuk mulai booking layanan kami</p>
 
       <form @submit.prevent="handleRegister">
-        <!-- NAMA LENGKAP -->
+        <!-- Nama Lengkap -->
         <div class="form-group">
           <label>Nama Lengkap</label>
           <input 
             type="text" 
-            v-model="name" 
-            placeholder="Masukkan nama lengkap"
-            :class="{ 'input-error': nameError }"
+            v-model="form.name" 
+            placeholder="Masukkan nama lengkap" 
+            required 
           />
-          <span v-if="nameError" class="error-message">{{ nameError }}</span>
         </div>
 
-        <!-- EMAIL -->
+        <!-- Input Email Prefiks dengan Suffix @barberly.com Terkunci -->
         <div class="form-group">
           <label>Email</label>
-          <input 
-            type="email" 
-            v-model="email" 
-            placeholder="contoh@email.com"
-            :class="{ 'input-error': emailError }"
-          />
-          <span v-if="emailError" class="error-message">{{ emailError }}</span>
+          <div class="email-input-wrapper">
+            <input 
+              type="text" 
+              v-model="emailPrefix" 
+              placeholder="nama.user" 
+              required 
+            />
+            <span class="email-domain">@barberly.com</span>
+          </div>
+          <span v-if="emailError" class="error-text">{{ emailError }}</span>
         </div>
 
-        <!-- NO TELEPON -->
+        <!-- No Telepon -->
         <div class="form-group">
           <label>No. Telepon / WhatsApp</label>
           <input 
-            type="text" 
-            v-model="phone" 
-            placeholder="08xx-xxxx-xxxx"
-            :class="{ 'input-error': phoneError }"
+            type="tel" 
+            v-model="form.phone" 
+            placeholder="08xx xxxx xxxx" 
+            required 
           />
-          <span v-if="phoneError" class="error-message">{{ phoneError }}</span>
         </div>
 
-        <!-- PASSWORD -->
+        <!-- Password dengan Ikon Mata SVG (Show/Hide) -->
         <div class="form-group">
           <label>Password</label>
-          <input 
-            type="password" 
-            v-model="password" 
-            placeholder="Minimal 6 karakter"
-            :class="{ 'input-error': passwordError }"
-          />
-          <span v-if="passwordError" class="error-message">{{ passwordError }}</span>
+          <div class="password-wrapper">
+            <input 
+              :type="showPassword ? 'text' : 'password'" 
+              v-model="form.password" 
+              placeholder="Minimal 6 karakter" 
+              minlength="6"
+              required 
+            />
+            <button 
+              type="button" 
+              class="eye-btn" 
+              @click="showPassword = !showPassword"
+              tabindex="-1"
+            >
+              <!-- Ikon Mata Terbuka -->
+              <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+
+              <!-- Ikon Mata Dicoret / Tertutup -->
+              <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <button type="submit" class="btn-submit" :disabled="isLoading">
-          {{ isLoading ? 'Mendaftarkan...' : 'Daftar' }}
+        <!-- Pesan Error Umum -->
+        <div v-if="errorMessage" class="error-banner">
+          {{ errorMessage }}
+        </div>
+
+        <button type="submit" class="btn-submit" :disabled="loading">
+          {{ loading ? 'Memproses...' : 'Daftar' }}
         </button>
       </form>
 
       <p class="login-link">
-        Sudah punya akun? <router-link to="/login"><strong>Masuk</strong></router-link>
+        Sudah punya akun? <router-link to="/login">Masuk</router-link>
       </p>
     </div>
   </div>
@@ -68,149 +94,192 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 
 const router = useRouter()
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-const name = ref('')
-const email = ref('')
-const phone = ref('')
-const password = ref('')
+const form = ref({
+  name: '',
+  phone: '',
+  password: ''
+})
 
-const nameError = ref('')
+// Menyimpan nama email depan yang diisi user
+const emailPrefix = ref('')
+
+const showPassword = ref(false)
+const loading = ref(false)
 const emailError = ref('')
-const phoneError = ref('')
-const passwordError = ref('')
-const isLoading = ref(false)
+const errorMessage = ref('')
 
 const handleRegister = async () => {
-  console.log("Tombol Daftar diklik!") // Cek apakah fungsi terpanggil
-
-  // Reset pesan error
-  nameError.value = ''
   emailError.value = ''
-  phoneError.value = ''
-  passwordError.value = ''
+  errorMessage.value = ''
 
-  let isValid = true
+  // Bersihkan input depan dari karakter spasi / simbol tidak valid jika ada
+  const cleanPrefix = emailPrefix.value.trim().toLowerCase()
 
-  if (!name.value) {
-    nameError.value = 'Nama lengkap tidak boleh kosong'
-    isValid = false
-  }
-  if (!email.value) {
-    emailError.value = 'Email tidak boleh kosong'
-    isValid = false
-  }
-  if (!phone.value) {
-    phoneError.value = 'Nomor telepon tidak boleh kosong'
-    isValid = false
-  }
-  if (!password.value || password.value.length < 6) {
-    passwordError.value = 'Password minimal harus 6 karakter'
-    isValid = false
+  if (!cleanPrefix) {
+    emailError.value = 'Silakan isi nama akun email kamu'
+    return
   }
 
-  console.log("Status validasi form:", isValid) // Cek apakah lolos validasi
-  if (!isValid) return
+  // Gabungkan prefix dengan domain tetap
+  const fullEmail = `${cleanPrefix}@barberly.com`
 
-  isLoading.value = true
+  loading.value = true
 
   try {
-    console.log("Mengirim request ke backend...")
-    const response = await axios.post('http://localhost:8080/api/register', {
-      name: name.value,
-      email: email.value,
-      phone: phone.value,
-      password: password.value
+    const res = await fetch(`${API_BASE_URL}/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: form.value.name,
+        email: fullEmail,
+        phone: form.value.phone,
+        password: form.value.password
+      })
     })
-    console.log("Respons dari backend:", response.data)
 
-    alert('Registrasi berhasil! Silakan masuk dengan akun Anda.')
-    router.push('/login')
-  } catch (error) {
-    console.log("Error tertangkap:", error)
-    const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Registrasi gagal. Silakan coba lagi.'
-    emailError.value = errorMsg
+    const data = await res.json()
+
+    if (res.ok) {
+      alert('Registrasi akun Barberly berhasil! Silakan login.')
+      router.push('/login')
+    } else {
+      errorMessage.value = data.error || 'Registrasi gagal, silakan coba lagi.'
+    }
+  } catch (err) {
+    console.error(err)
+    errorMessage.value = 'Gagal terhubung ke server backend.'
   } finally {
-    isLoading.value = false
+    loading.value = false
   }
 }
-
 </script>
 
 <style scoped>
 .register-container {
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background: url('@/assets/images/bg-login.png') no-repeat center center / cover;
-  padding: 1rem;
+  padding: 1.5rem;
+  background: url('@/assets/images/bg-login.png') center/cover no-repeat;
 }
 
 .register-card {
-  background: #ffffff;
-  padding: 2.5rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2.5rem;
   border-radius: 16px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 h2 {
   margin: 0;
-  font-size: 1.6rem;
+  text-align: center;
+  color: #0f172a;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: #111827;
 }
 
 .subtitle {
-  color: #4b5563;
-  font-size: 0.95rem;
-  margin-top: 0.35rem;
-  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-top: 0.4rem;
+  margin-bottom: 1.8rem;
 }
 
 .form-group {
-  text-align: left;
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
 }
 
 .form-group label {
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #111827;
-  margin-bottom: 0.35rem;
+  color: #334155;
+  margin-bottom: 0.4rem;
 }
 
 .form-group input {
   width: 100%;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid #d1d5db;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 0.875rem;
-  outline: none;
+  font-size: 0.9rem;
   box-sizing: border-box;
+  outline: none;
+  background: #ffffff;
+  transition: border-color 0.2s;
 }
 
-.form-group input.input-error {
-  border-color: #ef4444;
+.form-group input:focus {
+  border-color: #2563eb;
 }
 
-.error-message {
-  display: block;
-  color: #ef4444;
-  font-size: 0.75rem;
-  margin-top: 0.3rem;
-  font-weight: 500;
+/* Custom Email Input dengan Suffix Terkunci */
+.email-input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.email-input-wrapper:focus-within {
+  border-color: #2563eb;
+}
+
+.email-input-wrapper input {
+  border: none;
+  border-radius: 0;
+  flex: 1;
+}
+
+.email-domain {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-left: 1px solid #cbd5e1;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrapper input {
+  padding-right: 2.5rem;
+}
+
+.eye-btn {
+  position: absolute;
+  right: 0.6rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-submit {
   width: 100%;
-  padding: 0.8rem;
+  padding: 0.75rem;
   background-color: #0000ff;
   color: #ffffff;
   border: none;
@@ -219,21 +288,45 @@ h2 {
   font-size: 0.95rem;
   cursor: pointer;
   margin-top: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.btn-submit:hover {
+  background-color: #0000cc;
 }
 
 .btn-submit:disabled {
-  background-color: #93c5fd;
+  background-color: #94a3b8;
   cursor: not-allowed;
 }
 
 .login-link {
-  font-size: 0.8rem;
-  color: #4b5563;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
   margin-top: 1.5rem;
 }
 
 .login-link a {
-  color: #111827;
+  color: #0f172a;
+  font-weight: 600;
   text-decoration: none;
+}
+
+.error-text {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.error-banner {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 0.6rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+  text-align: center;
 }
 </style>

@@ -67,15 +67,32 @@
                 <span :class="['badge', booking.status.toLowerCase()]">{{ booking.status }}</span>
               </td>
               <td>
-                <!-- Tombol hanya tampil jika status masih PENDING -->
-                <button 
-                  v-if="booking.status === 'PENDING'"
-                  @click="updateBookingToDone(booking.rawId)"
-                  class="btn-action-done">
-                  Tandai Selesai
-                </button>
-                <!-- Jika sudah COMPLETED / DONE / SELESAI, tampilkan teks Selesai -->
-                <span v-else class="text-completed">Selesai</span>
+                <!-- Jika status PENDING, tampilkan tombol Tandai Selesai dan Tolak/Batal -->
+                <div v-if="booking.status === 'PENDING'" class="action-buttons">
+                  <button 
+                    @click="updateBookingStatus(booking.rawId, 'completed')"
+                    class="btn-action-done">
+                    Tandai Selesai
+                  </button>
+                  <button 
+                    @click="updateBookingStatus(booking.rawId, 'cancelled')"
+                    class="btn-action-cancel">
+                    Tolak / Batal
+                  </button>
+                </div>
+
+                <!-- Jika sudah COMPLETED / DONE / SELESAI -->
+                <span v-else-if="booking.status === 'COMPLETED' || booking.status === 'DONE' || booking.status === 'SELESAI'" class="text-completed">
+                  Selesai
+                </span>
+
+                <!-- Jika status CANCELLED / BATAL -->
+                <span v-else-if="booking.status === 'CANCELLED' || booking.status === 'BATAL'" class="text-cancelled">
+                  Dibatalkan
+                </span>
+
+                <!-- Default status lainnya -->
+                <span v-else class="text-completed">-</span>
               </td>
             </tr>
           </tbody>
@@ -103,8 +120,7 @@ const isLoading = ref(true)
 const isLoadingStats = ref(true)
 const errorMessage = ref('')
 
-// Ganti IP dengan IP backend Go partner Anda
-const API_BASE_URL = 'http://192.168.69.139:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 // Fetch data statistik real dari backend (/admin/dashboard-stats)
 const fetchDashboardStats = async () => {
@@ -212,8 +228,14 @@ const fetchDashboardData = async () => {
   }
 }
 
-// Fungsi untuk menembak API backend Go (/bookings/:id/status) dengan status 'completed'
-const updateBookingToDone = async (id) => {
+// Fungsi fleksibel untuk mengubah status booking ('completed' / 'cancelled')
+const updateBookingStatus = async (id, newStatus) => {
+  const confirmMessage = newStatus === 'cancelled'
+    ? 'Apakah Anda yakin ingin membatalkan/menolak booking ini?'
+    : 'Tandai booking ini sebagai selesai?'
+
+  if (!confirm(confirmMessage)) return
+
   try {
     const token = localStorage.getItem('token')
     
@@ -223,7 +245,7 @@ const updateBookingToDone = async (id) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ status: 'completed' })
+      body: JSON.stringify({ status: newStatus })
     })
 
     if (response.ok) {
@@ -383,7 +405,19 @@ onMounted(() => {
   color: #b45309;
 }
 
-/* Tombol Aksi */
+.badge.cancelled, .badge.batal {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+/* Action Buttons Container */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Tombol Tandai Selesai */
 .btn-action-done {
   background-color: #15803d;
   color: #ffffff;
@@ -400,8 +434,30 @@ onMounted(() => {
   background-color: #166534;
 }
 
+/* Tombol Tolak / Batal */
+.btn-action-cancel {
+  background-color: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-action-cancel:hover {
+  background-color: #b91c1c;
+}
+
 .text-completed {
   color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.text-cancelled {
+  color: #ef4444;
   font-size: 0.85rem;
 }
 </style>
