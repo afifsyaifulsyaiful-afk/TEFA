@@ -18,15 +18,15 @@
 
       <!-- MENU SIDEBAR -->
       <nav class="sidebar-menu">
-        <router-link to="/admin/dashboard" class="menu-item" active-class="active">📊 Dashboard</router-link>
-        <router-link to="/admin/booking" class="menu-item" active-class="active">📋 Kelola Booking</router-link>
-        <router-link to="/admin/master" class="menu-item" active-class="active">📁 Data Master</router-link>
-        <router-link to="/admin/reports" class="menu-item" active-class="active">📈 Laporan Keuangan</router-link>
-        <router-link to="/admin/settings" class="menu-item" active-class="active">⚙️ Pengaturan</router-link>
+        <router-link to="/admin/dashboard" class="menu-item" active-class="active">Dashboard</router-link>
+        <router-link to="/admin/booking" class="menu-item" active-class="active">Kelola Booking</router-link>
+        <router-link to="/admin/master" class="menu-item" active-class="active">Data Master</router-link>
+        <router-link to="/admin/reports" class="menu-item" active-class="active">Laporan Keuangan</router-link>
+        <router-link to="/admin/settings" class="menu-item" active-class="active">Pengaturan</router-link>
       </nav>
 
       <div class="sidebar-footer">
-        <a href="#" @click.prevent="handleLogout" class="menu-item logout">🚪 Logout</a>
+        <a href="#" @click.prevent="handleLogout" class="menu-item logout">Logout</a>
       </div>
     </aside>
 
@@ -38,7 +38,7 @@
         
         <div class="header-right">
           <!-- Live Time badge -->
-          <span class="date-badge">📅 {{ currentDateTime }}</span>
+          <span class="date-badge">{{ currentDateTime }}</span>
           
           <!-- DROPDOWN NOTIFIKASI -->
           <div class="dropdown-wrapper">
@@ -71,8 +71,8 @@
               <span class="arrow">▾</span>
             </div>
             <div v-if="showProfileMenu" class="dropdown-card profile-dropdown">
-              <router-link to="/admin/settings" class="dropdown-link" @click="showProfileMenu = false">⚙️ Pengaturan</router-link>
-              <div class="dropdown-link text-danger" @click="handleLogout">🚪 Logout</div>
+              <router-link to="/admin/settings" class="dropdown-link" @click="showProfileMenu = false">Pengaturan</router-link>
+              <div class="dropdown-link text-danger" @click="handleLogout">Logout</div>
             </div>
           </div>
         </div>

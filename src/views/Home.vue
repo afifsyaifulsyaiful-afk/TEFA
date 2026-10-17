@@ -69,7 +69,7 @@ const handleLogout = () => {
           Tampil Percaya Diri Setiap Hari.
         </h1>
         <button @click="handleBookingClick" class="btn-booking">
-          ✂️ Buat Booking Sekarang
+           Buat Booking Sekarang
         </button>
       </div>
     </main>

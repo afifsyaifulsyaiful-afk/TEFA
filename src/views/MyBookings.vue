@@ -22,7 +22,7 @@
       </div>
 
       <div class="header-section">
-        <h1>Booking Saya 📅</h1>
+        <h1>Booking Saya</h1>
         <p class="subjudul">Cek status dan riwayat janji cukur rambutmu di sini</p>
       </div>
 
@@ -38,7 +38,7 @@
       <div v-else-if="bookings.length === 0" class="empty-state">
         <p>Kamu belum memiliki riwayat booking.</p>
         <button class="btn-booking-now" @click="router.push('/layanan')">
-          ✂️ Buat Booking Sekarang
+          Buat Booking Sekarang
         </button>
       </div>
 
@@ -50,7 +50,7 @@
           class="booking-card"
         >
           <div class="card-header">
-            <span class="service-name">✂️ {{ item.service?.name || item.service_name || 'Layanan' }}</span>
+            <span class="service-name">{{ item.service?.name || item.service_name || 'Layanan' }}</span>
             <span :class="['status-badge', getStatusClass(item.status)]">
               {{ formatStatus(item.status) }}
             </span>
@@ -69,11 +69,11 @@
               <span class="label">Harga:</span>
               <span class="val price">Rp {{ Number(item.service?.price || item.price || 0).toLocaleString('id-ID') }}</span>
             </div>
-            <!-- Informasi Metode Pembayaran -->
+            <!-- Informasi Metode Pembayaran Tanpa Emoji -->
             <div class="info-row payment-info">
               <span class="label">Metode Pembayaran:</span>
               <span class="val payment-method">
-                💵 Bayar Tunai di Kasir 
+                Bayar Tunai di Kasir 
                 <small class="payment-status-tag" :class="item.status === 'completed' ? 'tag-paid' : 'tag-unpaid'">
                   ({{ item.status === 'completed' ? 'Lunas' : 'Bayar Setelah Cukur' }})
                 </small>

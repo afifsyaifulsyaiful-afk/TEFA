@@ -7,10 +7,10 @@
       </div>
       <!-- Tab Navigasi Internal -->
       <div class="sub-tabs">
-        <button :class="{ active: currentSubTab === 'layanan' }" @click="currentSubTab = 'layanan'">✂️ Layanan</button>
-        <button :class="{ active: currentSubTab === 'barber' }" @click="currentSubTab = 'barber'">💈 Barber</button>
-        <button :class="{ active: currentSubTab === 'jadwal' }" @click="currentSubTab = 'jadwal'">📅 Jadwal</button>
-        <button :class="{ active: currentSubTab === 'pelanggan' }" @click="currentSubTab = 'pelanggan'">👥 Pelanggan</button>
+        <button :class="{ active: currentSubTab === 'layanan' }" @click="currentSubTab = 'layanan'">Layanan</button>
+        <button :class="{ active: currentSubTab === 'barber' }" @click="currentSubTab = 'barber'">Barber</button>
+        <button :class="{ active: currentSubTab === 'jadwal' }" @click="currentSubTab = 'jadwal'">Jadwal</button>
+        <button :class="{ active: currentSubTab === 'pelanggan' }" @click="currentSubTab = 'pelanggan'">Pelanggan</button>
       </div>
     </div>
 
@@ -58,7 +58,7 @@
           </div>
           <div class="barber-info">
             <h4 class="barber-name">{{ b.name }}</h4>
-            <p class="barber-specialty">⭐ {{ b.specialty || 'Semua Layanan' }}</p>
+            <p class="barber-specialty"> {{ b.specialty || 'Semua Layanan' }}</p>
             <div class="barber-status-badge">
               <span class="badge-status">Aktif</span>
             </div>
@@ -85,8 +85,8 @@
           </div>
           <div class="barber-info">
             <h4 class="barber-name">{{ b.name }}</h4>
-            <p class="schedule-days">🗓️ {{ b.schedule?.days || 'Senin - Sabtu' }}</p>
-            <p class="schedule-hours">⏰ {{ b.schedule?.hours || '09:00 - 21:00 WIB' }}</p>
+            <p class="schedule-days"> {{ b.schedule?.days || 'Senin - Sabtu' }}</p>
+            <p class="schedule-hours"> {{ b.schedule?.hours || '09:00 - 21:00 WIB' }}</p>
             <div class="barber-status-badge">
               <span :class="['badge-status', b.schedule?.status === 'Libur' ? 'badge-libur' : '']">
                 {{ b.schedule?.status || 'Masuk' }}

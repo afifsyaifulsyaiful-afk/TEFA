@@ -28,7 +28,7 @@
       </div>
 
       <div class="header-section">
-        <h1>Tentang {{ shopSettings.name || 'Barberly' }} 💈</h1>
+        <h1>Tentang {{ shopSettings.name || 'Barberly' }} </h1>
         <p class="subjudul">Layanan Potong Rambut Modern & Profesional</p>
       </div>
 
@@ -42,11 +42,11 @@
 
         <div class="info-grid">
           <div class="info-item">
-            <h4>⏰ Jam Operasional</h4>
+            <h4>Jam Operasional</h4>
             <p>{{ formattedOperatingHours }}</p>
           </div>
           <div class="info-item">
-            <h4>📍 Lokasi Utama</h4>
+            <h4>Lokasi Utama</h4>
             <p>{{ shopSettings.address }}</p>
           </div>
         </div>

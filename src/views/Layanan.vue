@@ -6,17 +6,25 @@
       <nav class="nav-links">
         <router-link to="/">Home</router-link>
         <router-link to="/layanan">Layanan</router-link>
-        <router-link to="/my-bookings">Booking Saya</router-link>
+        <!-- Tampilkan menu ini hanya saat user sudah login -->
+        <router-link v-if="isLoggedIn" to="/my-bookings">Booking Saya</router-link>
         <router-link to="/tentang">Tentang Kami</router-link>
       </nav>
+
+      <!-- Auth Buttons -->
       <div class="nav-auth">
-        <button class="btn-logout" @click="handleLogout">Keluar</button>
+        <router-link v-if="!isLoggedIn" to="/login" class="btn-login">
+          Masuk
+        </router-link>
+        <button v-else @click="handleLogout" class="btn-logout">
+          Keluar
+        </button>
       </div>
     </header>
 
     <main class="container">
       <div class="header-section">
-        <h1>Pilih Layanan Cukur ✂️</h1>
+        <h1>Pilih Layanan Cukur</h1>
         <p class="subjudul">Pilih layanan terbaik kami dan tentukan jadwal cukur favoritmu</p>
       </div>
 
@@ -29,7 +37,7 @@
         <div v-for="service in services" :key="service.id" class="service-card">
           <div class="card-body">
             <h3 class="service-title">{{ service.name }}</h3>
-            <p class="service-duration">⏱️ Durasi: {{ service.duration || 30 }} Menit</p>
+            <p class="service-duration">Durasi: {{ service.duration || 30 }} Menit</p>
             <p class="service-price">Rp {{ Number(service.price).toLocaleString('id-ID') }}</p>
           </div>
           <div class="card-footer">
@@ -47,7 +55,7 @@
         <h3>Booking Layanan: {{ selectedService?.name }}</h3>
         
         <form @submit.prevent="submitBooking">
-          <!-- Pilih Barber dengan Foto & Scrollbar Rapi -->
+          <!-- Pilih Barber -->
           <div class="form-group">
             <label>Pilih Barber</label>
             <div class="barber-list-container">
@@ -64,7 +72,7 @@
                 />
                 <div class="barber-list-info">
                   <span class="barber-list-name">{{ b.name }}</span>
-                  <span class="barber-list-spec">⭐ {{ b.specialty || 'Semua Layanan' }}</span>
+                  <span class="barber-list-spec">{{ b.specialty || 'Semua Layanan' }}</span>
                 </div>
                 <div class="radio-indicator"></div>
               </div>
@@ -87,7 +95,7 @@
             </div>
           </div>
 
-          <!-- Jam Cukur dengan Penanda Jam yang Sudah Dibooking -->
+          <!-- Jam Cukur -->
           <div class="form-group">
             <label>Pilih Jam Cukur</label>
             <select v-model="bookingForm.booking_time" required class="form-control">
@@ -134,9 +142,10 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+const isLoggedIn = ref(false)
 const services = ref([])
 const barbers = ref([])
-const bookedTimes = ref([]) // Menyimpan daftar jam yang sudah dibooking oleh barber pada tanggal tertentu
+const bookedTimes = ref([])
 const isLoading = ref(true)
 const errorMessage = ref('')
 
@@ -180,7 +189,6 @@ const bookingForm = ref({
   booking_time: ''
 })
 
-// Fungsi untuk mengambil data booking yang sudah ada dari server berdasarkan barber & tanggal
 const fetchBookedSlots = async () => {
   if (!bookingForm.value.barber_id || !bookingForm.value.booking_date) {
     bookedTimes.value = []
@@ -195,7 +203,6 @@ const fetchBookedSlots = async () => {
     const data = await response.json()
     if (response.ok) {
       const rawBookings = data.data || data
-      // Ambil jam dari waktu booking yang sudah ada (format: HH:MM)
       bookedTimes.value = rawBookings
         .filter(b => b.status !== 'cancelled')
         .map(b => {
@@ -208,7 +215,6 @@ const fetchBookedSlots = async () => {
   }
 }
 
-// Pantau perubahan barber atau tanggal untuk memperbarui slot jam yang terisi
 watch(() => [bookingForm.value.barber_id, bookingForm.value.booking_date], () => {
   fetchBookedSlots()
 })
@@ -223,7 +229,6 @@ const selectDate = (dateVal) => {
   bookingForm.value.booking_time = ''
 }
 
-// Menghasilkan daftar jam lengkap dengan status apakah sudah dibooking atau sudah lewat
 const timeSlotsWithStatus = computed(() => {
   const todayStr = new Date().toLocaleDateString('en-CA')
   const now = new Date()
@@ -233,7 +238,6 @@ const timeSlotsWithStatus = computed(() => {
   return allTimeSlots.map(time => {
     const [h, m] = time.split(':').map(Number)
     
-    // Cek apakah jam sudah lewat (hanya berlaku jika memilih hari ini)
     let isPassed = false
     if (bookingForm.value.booking_date === todayStr) {
       if (h < currentHour || (h === currentHour && m <= currentMinute)) {
@@ -241,7 +245,6 @@ const timeSlotsWithStatus = computed(() => {
       }
     }
 
-    // Cek apakah jam sudah dibooking orang lain
     const isBooked = bookedTimes.value.includes(time)
 
     return {
@@ -355,22 +358,70 @@ const submitBooking = async () => {
 
 const handleLogout = () => {
   localStorage.clear()
+  isLoggedIn.value = false
   router.push('/login')
 }
 
 onMounted(() => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    isLoggedIn.value = true
+  }
   fetchData()
 })
 </script>
 
 <style scoped>
 .layanan-page { min-height: 100vh; background-color: #121212; color: #fff; }
-.navbar { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 3rem; background-color: #000; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-.brand { font-size: 1.6rem; font-family: serif; font-weight: bold; cursor: pointer; }
-.nav-links { display: flex; gap: 2rem; }
+
+/* Navbar dengan sistem Absolute Centering agar menu selalu presisi di tengah */
+.navbar { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  padding: 1.2rem 3rem; 
+  background-color: #000; 
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
+  position: relative;
+}
+.brand { 
+  font-size: 1.6rem; 
+  font-family: serif; 
+  font-weight: bold; 
+  cursor: pointer; 
+  z-index: 2; 
+}
+.nav-links { 
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex; 
+  gap: 2rem; 
+  z-index: 1;
+}
 .nav-links a { color: #b0b0b0; text-decoration: none; }
 .nav-links a.router-link-active { color: #fff; font-weight: bold; }
+
+.nav-auth {
+  z-index: 2;
+}
+
 .btn-logout { background: #ef4444; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+
+.btn-login {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.btn-login:hover {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
 
 .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem; }
 .header-section { text-align: center; margin-bottom: 2.5rem; }
