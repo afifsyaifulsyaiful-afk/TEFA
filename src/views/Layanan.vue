@@ -6,8 +6,17 @@
       <nav class="nav-links">
         <router-link to="/">Home</router-link>
         <router-link to="/layanan">Layanan</router-link>
-        <!-- Tampilkan menu ini hanya saat user sudah login -->
-        <router-link v-if="isLoggedIn" to="/my-bookings">Booking Saya</router-link>
+        
+        <!-- Tampilkan "Booking Saya" HANYA jika sudah login dan BUKAN admin -->
+        <router-link v-if="isLoggedIn && userRole !== 'admin'" to="/my-bookings">
+          Booking Saya
+        </router-link>
+
+        <!-- Tampilkan "Dashboard Admin" HANYA jika yang login adalah admin -->
+        <router-link v-if="isLoggedIn && userRole === 'admin'" to="/admin/dashboard" class="admin-dashboard-link">
+          Dashboard Admin
+        </router-link>
+
         <router-link to="/tentang">Tentang Kami</router-link>
       </nav>
 
@@ -41,9 +50,14 @@
             <p class="service-price">Rp {{ Number(service.price).toLocaleString('id-ID') }}</p>
           </div>
           <div class="card-footer">
-            <button class="btn-book" @click="openBookingModal(service)">
+            <!-- Tombol Booking HANYA muncul jika BUKAN admin -->
+            <button v-if="userRole !== 'admin'" class="btn-book" @click="openBookingModal(service)">
               Booking Sekarang
             </button>
+            <!-- Label khusus untuk Admin -->
+            <div v-else class="admin-notice">
+              <span>Mode Lihat Admin (Booking Dinonaktifkan)</span>
+            </div>
           </div>
         </div>
       </div>
@@ -132,17 +146,23 @@
         </form>
       </div>
     </div>
+
+    <!-- Komponen Toast Terpusat -->
+    <Toast ref="toastRef" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import Toast from '@/components/Toast.vue'
 
 const router = useRouter()
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+const toastRef = ref(null)
 const isLoggedIn = ref(false)
+const userRole = ref('')
 const services = ref([])
 const barbers = ref([])
 const bookedTimes = ref([])
@@ -298,8 +318,15 @@ const fetchData = async () => {
 const openBookingModal = (service) => {
   const token = localStorage.getItem('token')
   if (!token) {
-    alert('Silakan login terlebih dahulu untuk membuat booking.')
-    router.push('/login')
+    toastRef.value?.triggerToast('Silakan login terlebih dahulu untuk membuat booking.', 'error')
+    setTimeout(() => router.push('/login'), 1500)
+    return
+  }
+
+  // Pencegahan ekstra jika admin mencoba membuka modal
+  if (userRole.value === 'admin') {
+    toastRef.value?.triggerToast('Akun Admin tidak dapat melakukan booking layanan.', 'error')
+    setTimeout(() => router.push('/admin/dashboard'), 1500)
     return
   }
 
@@ -312,12 +339,19 @@ const openBookingModal = (service) => {
 }
 
 const submitBooking = async () => {
+  // Blokir jika role adalah admin
+  if (userRole.value === 'admin') {
+    toastRef.value?.triggerToast('Aksi ditolak: Admin tidak diizinkan melakukan booking.', 'error')
+    setTimeout(() => router.push('/admin/dashboard'), 1500)
+    return
+  }
+
   if (!bookingForm.value.barber_id) {
-    alert('Harap pilih barber terlebih dahulu!')
+    toastRef.value?.triggerToast('Harap pilih barber terlebih dahulu!', 'error')
     return
   }
   if (!bookingForm.value.booking_date || !bookingForm.value.booking_time) {
-    alert('Harap pilih tanggal dan jam booking!')
+    toastRef.value?.triggerToast('Harap pilih tanggal dan jam booking!', 'error')
     return
   }
 
@@ -343,14 +377,14 @@ const submitBooking = async () => {
     const resData = await response.json()
 
     if (response.ok) {
-      alert('Booking berhasil dibuat! Silakan cek di menu Booking Saya.')
+      toastRef.value?.triggerToast('Booking berhasil dibuat! Silakan cek di menu Booking Saya.', 'success')
       showModal.value = false
-      router.push('/my-bookings')
+      setTimeout(() => router.push('/my-bookings'), 1500)
     } else {
-      alert(resData.error || 'Gagal membuat booking.')
+      toastRef.value?.triggerToast(resData.error || 'Gagal membuat booking.', 'error')
     }
   } catch (err) {
-    alert('Terjadi kesalahan jaringan.')
+    toastRef.value?.triggerToast('Terjadi kesalahan jaringan.', 'error')
   } finally {
     isSubmitting.value = false
   }
@@ -359,13 +393,17 @@ const submitBooking = async () => {
 const handleLogout = () => {
   localStorage.clear()
   isLoggedIn.value = false
+  userRole.value = ''
   router.push('/login')
 }
 
 onMounted(() => {
   const token = localStorage.getItem('token')
+  const role = localStorage.getItem('role') || localStorage.getItem('user_role')
+  
   if (token) {
     isLoggedIn.value = true
+    userRole.value = role
   }
   fetchData()
 })
@@ -401,6 +439,11 @@ onMounted(() => {
 }
 .nav-links a { color: #b0b0b0; text-decoration: none; }
 .nav-links a.router-link-active { color: #fff; font-weight: bold; }
+
+.admin-dashboard-link {
+  color: #ffc107 !important;
+  font-weight: bold;
+}
 
 .nav-auth {
   z-index: 2;
@@ -438,6 +481,17 @@ onMounted(() => {
 
 .btn-book { background: #f59e0b; color: #000; border: none; width: 100%; padding: 0.75rem; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 1rem; }
 .btn-book:hover { background: #d97706; }
+
+.admin-notice {
+  text-align: center;
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  border-radius: 8px;
+  font-weight: 500;
+  margin-top: 1rem;
+}
 
 /* Modal Styling */
 .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; z-index:100; }

@@ -6,7 +6,17 @@
       <nav class="nav-links">
         <router-link to="/">Home</router-link>
         <router-link to="/layanan">Layanan</router-link>
-        <router-link to="/my-bookings">Booking Saya</router-link>
+        
+        <!-- Tampilkan "Booking Saya" HANYA jika sudah login dan BUKAN admin -->
+        <router-link v-if="isLoggedIn && userRole !== 'admin'" to="/my-bookings">
+          Booking Saya
+        </router-link>
+
+        <!-- Tampilkan "Dashboard Admin" HANYA jika yang login adalah admin -->
+        <router-link v-if="isLoggedIn && userRole === 'admin'" to="/admin/dashboard" class="admin-dashboard-link">
+          Dashboard Admin
+        </router-link>
+
         <router-link to="/tentang">Tentang Kami</router-link>
       </nav>
       <div class="nav-auth">
@@ -81,7 +91,7 @@
             </div>
           </div>
 
-          <!-- Batalkan Booking (Relasi Extend Use Case) -->
+          <!-- Batalkan Booking -->
           <div v-if="item.status === 'pending' || item.status === 'confirmed'" class="card-footer">
             <button class="btn-cancel" @click="cancelBooking(item.id)">
               Batalkan Booking
@@ -90,16 +100,23 @@
         </div>
       </div>
     </main>
+
+    <!-- Komponen Toast Terpusat -->
+    <Toast ref="toastRef" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import Toast from '@/components/Toast.vue'
 
 const router = useRouter()
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+const toastRef = ref(null)
+const isLoggedIn = ref(false)
+const userRole = ref('')
 const bookings = ref([])
 const isLoading = ref(true)
 const errorMessage = ref('')
@@ -166,10 +183,9 @@ const formatStatus = (status) => {
   }
 }
 
-// Batalkan Booking
+// Batalkan Booking dengan Toast
 const cancelBooking = async (id) => {
-  if (!confirm('Apakah kamu yakin ingin membatalkan booking ini?')) return
-
+  // Langsung proses pembatalan tanpa confirm() bawaan browser
   try {
     const token = localStorage.getItem('token')
     const response = await fetch(`${API_BASE_URL}/bookings/${id}/cancel`, {
@@ -180,14 +196,14 @@ const cancelBooking = async (id) => {
     })
 
     if (response.ok) {
-      alert('Booking berhasil dibatalkan.')
+      toastRef.value?.triggerToast('Booking berhasil dibatalkan.', 'success')
       fetchMyBookings()
     } else {
       const res = await response.json()
-      alert(res.error || 'Gagal membatalkan booking.')
+      toastRef.value?.triggerToast(res.error || 'Gagal membatalkan booking.', 'error')
     }
   } catch (err) {
-    alert('Terjadi kesalahan jaringan.')
+    toastRef.value?.triggerToast('Terjadi kesalahan jaringan.', 'error')
   }
 }
 
@@ -197,6 +213,23 @@ const handleLogout = () => {
 }
 
 onMounted(() => {
+  const token = localStorage.getItem('token')
+  const role = localStorage.getItem('role') || localStorage.getItem('user_role')
+
+  if (!token) {
+    router.push('/login')
+    return
+  }
+
+  isLoggedIn.value = true
+  userRole.value = role
+
+  if (role === 'admin') {
+    toastRef.value?.triggerToast('Akses ditolak: Akun Admin tidak memiliki halaman Booking Saya.', 'error')
+    setTimeout(() => router.push('/admin/dashboard'), 1500)
+    return
+  }
+
   fetchMyBookings()
 })
 </script>
@@ -239,6 +272,11 @@ onMounted(() => {
 .nav-links a:hover,
 .nav-links .router-link-active {
   color: #ffffff;
+}
+
+.admin-dashboard-link {
+  color: #ffc107 !important;
+  font-weight: bold;
 }
 
 .btn-logout {

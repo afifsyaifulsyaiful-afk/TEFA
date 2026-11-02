@@ -272,15 +272,20 @@
         </form>
       </div>
     </div>
+
+    <!-- Komponen Toast Terpusat -->
+    <Toast ref="toastRef" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import Toast from '@/components/Toast.vue'
 
 const route = useRoute()
 const currentSubTab = ref('layanan')
+const toastRef = ref(null)
 
 const updateTabFromRoute = () => {
   if (route.path.includes('master-barber')) currentSubTab.value = 'barber'
@@ -342,16 +347,16 @@ const uploadAvatar = async () => {
     })
 
     if (res.ok) {
-      alert('Foto profil barber berhasil diunggah!')
+      toastRef.value?.triggerToast('Foto profil barber berhasil diunggah!', 'success')
       showAvatarModal.value = false
       fetchAllData()
     } else {
       const errData = await res.json()
-      alert(errData.error || 'Gagal mengunggah foto.')
+      toastRef.value?.triggerToast(errData.error || 'Gagal mengunggah foto.', 'error')
     }
   } catch (err) {
     console.error('Error uploading avatar:', err)
-    alert('Terjadi kesalahan jaringan.')
+    toastRef.value?.triggerToast('Terjadi kesalahan jaringan.', 'error')
   } finally {
     isUploadingAvatar.value = false
   }
@@ -472,15 +477,20 @@ const submitService = async () => {
     if (res.ok) {
       showServiceModal.value = false
       newService.value = { name: '', price: 0, duration: 30 }
+      toastRef.value?.triggerToast('Layanan berhasil ditambahkan.', 'success')
       fetchAllData()
-    } else { alert('Gagal menambah layanan') }
-  } catch (err) { console.error(err) }
+    } else { 
+      toastRef.value?.triggerToast('Gagal menambah layanan.', 'error') 
+    }
+  } catch (err) { 
+    console.error(err) 
+  }
 }
 
 const submitBarber = async () => {
   try {
     if (selectedSpecialties.value.length === 0) {
-      alert('Pilih minimal 1 spesialisasi untuk barber!')
+      toastRef.value?.triggerToast('Pilih minimal 1 spesialisasi untuk barber!', 'error')
       return
     }
 
@@ -501,8 +511,11 @@ const submitBarber = async () => {
       showBarberModal.value = false
       newBarber.value = { name: '', specialty: '' }
       selectedSpecialties.value = []
+      toastRef.value?.triggerToast('Barber berhasil ditambahkan.', 'success')
       fetchAllData()
-    } else { alert('Gagal menambah barber') }
+    } else { 
+      toastRef.value?.triggerToast('Gagal menambah barber.', 'error') 
+    }
   } catch (err) { console.error(err) }
 }
 
@@ -576,25 +589,34 @@ const saveSchedule = async () => {
       }
 
       showScheduleModal.value = false
+      toastRef.value?.triggerToast('Jadwal berhasil diperbarui.', 'success')
       fetchAllData()
     } else {
-      alert('Gagal memperbarui jadwal ke database server.')
+      toastRef.value?.triggerToast('Gagal memperbarui jadwal ke database server.', 'error')
     }
   } catch (err) {
     console.error('Gagal menyimpan jadwal ke backend:', err)
-    alert('Terjadi kesalahan jaringan saat menyimpan.')
+    toastRef.value?.triggerToast('Terjadi kesalahan jaringan saat menyimpan.', 'error')
   } finally {
     isSavingSchedule.value = false
   }
 }
 
 const deleteItem = async (endpoint, id) => {
-  if (!confirm('Yakin ingin menghapus data ini?')) return
-  await fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
-    method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` }
-  })
-  fetchAllData()
+  try {
+    const res = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (res.ok) {
+      toastRef.value?.triggerToast('Data berhasil dihapus.', 'success')
+      fetchAllData()
+    } else {
+      toastRef.value?.triggerToast('Gagal menghapus data.', 'error')
+    }
+  } catch (err) {
+    toastRef.value?.triggerToast('Terjadi kesalahan jaringan.', 'error')
+  }
 }
 
 onMounted(() => { fetchAllData() })

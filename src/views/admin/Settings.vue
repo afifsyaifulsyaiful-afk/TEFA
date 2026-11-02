@@ -66,12 +66,17 @@
         </button>
       </form>
     </div>
+
+    <!-- Komponen Toast Terpusat -->
+    <Toast ref="toastRef" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import Toast from '@/components/Toast.vue'
 
+const toastRef = ref(null)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const isSaving = ref(false)
 const adminEmail = ref('admin@barberly.com')
@@ -162,14 +167,14 @@ const saveSettings = async () => {
     const result = await res.json().catch(() => ({}))
 
     if (res.ok) {
-      alert('Pengaturan toko berhasil disimpan!')
+      toastRef.value?.triggerToast('Pengaturan toko berhasil disimpan!', 'success')
       fetchSettings()
     } else {
-      alert(result.message || result.error || 'Gagal menyimpan pengaturan.')
+      toastRef.value?.triggerToast(result.message || result.error || 'Gagal menyimpan pengaturan.', 'error')
     }
   } catch (err) {
     console.error('Error:', err)
-    alert('Terjadi kesalahan koneksi ke server.')
+    toastRef.value?.triggerToast('Terjadi kesalahan koneksi ke server.', 'error')
   } finally {
     isSaving.value = false
   }

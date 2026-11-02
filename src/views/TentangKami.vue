@@ -6,9 +6,20 @@
       <nav class="nav-links">
         <router-link to="/">Home</router-link>
         <router-link to="/layanan">Layanan</router-link>
-        <router-link v-if="isLoggedIn" to="/my-bookings">Booking Saya</router-link>
+        
+        <!-- Tampilkan "Booking Saya" HANYA jika sudah login dan BUKAN admin -->
+        <router-link v-if="isLoggedIn && userRole !== 'admin'" to="/my-bookings">
+          Booking Saya
+        </router-link>
+
+        <!-- Tampilkan "Dashboard Admin" HANYA jika yang login adalah admin -->
+        <router-link v-if="isLoggedIn && userRole === 'admin'" to="/admin/dashboard" class="admin-dashboard-link">
+          Dashboard Admin
+        </router-link>
+
         <router-link to="/tentang">Tentang Kami</router-link>
       </nav>
+      
       <div class="nav-auth">
         <button v-if="isLoggedIn" class="btn-logout" @click="handleLogout">
           Keluar
@@ -63,6 +74,7 @@ const router = useRouter()
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const isLoggedIn = ref(false)
+const userRole = ref('')
 
 // Lokasi default ditetapkan langsung ke lokasi kamu
 const shopSettings = ref({
@@ -73,7 +85,7 @@ const shopSettings = ref({
   operating_hours: 'Senin - Minggu: 09:00 - 21:00 WIB'
 })
 
-// Format jam operasional
+// Format jam operasional (Diperbaiki dari typo sblmnya)
 const formattedOperatingHours = computed(() => {
   if (shopSettings.value.open_at && shopSettings.value.close_at) {
     return `Senin - Minggu: ${shopSettings.value.open_at} - ${shopSettings.value.close_at} WIB`
@@ -110,13 +122,19 @@ const fetchSettings = async () => {
 
 onMounted(() => {
   const token = localStorage.getItem('token')
-  isLoggedIn.value = !!token
+  const role = localStorage.getItem('role') || localStorage.getItem('user_role')
+  
+  if (token) {
+    isLoggedIn.value = true
+    userRole.value = role
+  }
   fetchSettings()
 })
 
 const handleLogout = () => {
   localStorage.clear()
   isLoggedIn.value = false
+  userRole.value = ''
   router.push('/login')
 }
 </script>
@@ -160,6 +178,11 @@ const handleLogout = () => {
 .nav-links a:hover,
 .nav-links .router-link-active {
   color: #ffffff;
+}
+
+.admin-dashboard-link {
+  color: #ffc107 !important;
+  font-weight: bold;
 }
 
 .btn-login {

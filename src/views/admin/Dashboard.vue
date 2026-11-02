@@ -99,12 +99,17 @@
         </table>
       </div>
     </div>
+
+    <!-- Komponen Toast Terpusat -->
+    <Toast ref="toastRef" />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import Toast from '@/components/Toast.vue'
 
+const toastRef = ref(null)
 const isPhoneLogin = ref(localStorage.getItem('is_phone_login') === 'true')
 
 // Variabel data reaktif
@@ -228,14 +233,8 @@ const fetchDashboardData = async () => {
   }
 }
 
-// Fungsi fleksibel untuk mengubah status booking ('completed' / 'cancelled')
+// Fungsi fleksibel untuk mengubah status booking menggunakan Toast
 const updateBookingStatus = async (id, newStatus) => {
-  const confirmMessage = newStatus === 'cancelled'
-    ? 'Apakah Anda yakin ingin membatalkan/menolak booking ini?'
-    : 'Tandai booking ini sebagai selesai?'
-
-  if (!confirm(confirmMessage)) return
-
   try {
     const token = localStorage.getItem('token')
     
@@ -249,16 +248,21 @@ const updateBookingStatus = async (id, newStatus) => {
     })
 
     if (response.ok) {
+      const msg = newStatus === 'cancelled' 
+        ? 'Booking berhasil dibatalkan.' 
+        : 'Booking berhasil ditandai sebagai selesai.'
+      toastRef.value?.triggerToast(msg, 'success')
+      
       // Refresh data booking & statistik setelah status diperbarui
       fetchDashboardData()
       fetchDashboardStats()
     } else {
       const errRes = await response.json().catch(() => ({}))
-      alert(errRes.error || 'Gagal memperbarui status ke server.')
+      toastRef.value?.triggerToast(errRes.error || 'Gagal memperbarui status ke server.', 'error')
     }
   } catch (err) {
     console.error(err)
-    alert('Terjadi kesalahan koneksi saat menghubungi backend.')
+    toastRef.value?.triggerToast('Terjadi kesalahan koneksi saat menghubungi backend.', 'error')
   }
 }
 
