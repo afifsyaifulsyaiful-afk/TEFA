@@ -1,69 +1,37 @@
 <template>
-  <div class="tentang-page">
-    <!-- Navbar -->
-    <header class="navbar">
-      <div class="brand" @click="router.push('/')">Barberly</div>
-      <nav class="nav-links">
-        <router-link to="/">Home</router-link>
-        <router-link to="/layanan">Layanan</router-link>
-        
-        <!-- Tampilkan "Booking Saya" HANYA jika sudah login dan BUKAN admin -->
-        <router-link v-if="isLoggedIn && userRole !== 'admin'" to="/my-bookings">
-          Booking Saya
-        </router-link>
+  <!-- Main Content -->
+  <main class="container">
+    <div class="top-bar">
+      <button class="btn-back" @click="router.push('/')">
+        ← Kembali ke Beranda
+      </button>
+    </div>
 
-        <!-- Tampilkan "Dashboard Admin" HANYA jika yang login adalah admin -->
-        <router-link v-if="isLoggedIn && userRole === 'admin'" to="/admin/dashboard" class="admin-dashboard-link">
-          Dashboard Admin
-        </router-link>
+    <div class="header-section">
+      <h1>Tentang {{ shopSettings.name || 'Barberly' }} </h1>
+      <p class="subjudul">Layanan Potong Rambut Modern & Profesional</p>
+    </div>
 
-        <router-link to="/tentang">Tentang Kami</router-link>
-      </nav>
-      
-      <div class="nav-auth">
-        <button v-if="isLoggedIn" class="btn-logout" @click="handleLogout">
-          Keluar
-        </button>
-        <router-link v-else to="/login" class="btn-login">
-          Masuk
-        </router-link>
-      </div>
-    </header>
+    <div class="content-card">
+      <h3>Pengalaman Cukur Terbaik untuk Penampilan Maksimal</h3>
+      <p>
+        Barberly hadir untuk memberikan pengalaman cukur rambut terbaik dengan kapster profesional, 
+        peralatan higienis, dan suasana tempat yang nyaman. Kami melayani berbagai gaya potong rambut 
+        mulai dari gaya klasik hingga tren modern masa kini.
+      </p>
 
-    <!-- Main Content -->
-    <main class="container">
-      <div class="top-bar">
-        <button class="btn-back" @click="router.push('/')">
-          ← Kembali ke Beranda
-        </button>
-      </div>
-
-      <div class="header-section">
-        <h1>Tentang {{ shopSettings.name || 'Barberly' }} </h1>
-        <p class="subjudul">Layanan Potong Rambut Modern & Profesional</p>
-      </div>
-
-      <div class="content-card">
-        <h3>Pengalaman Cukur Terbaik untuk Penampilan Maksimal</h3>
-        <p>
-          Barberly hadir untuk memberikan pengalaman cukur rambut terbaik dengan kapster profesional, 
-          peralatan higienis, dan suasana tempat yang nyaman. Kami melayani berbagai gaya potong rambut 
-          mulai dari gaya klasik hingga tren modern masa kini.
-        </p>
-
-        <div class="info-grid">
-          <div class="info-item">
-            <h4>Jam Operasional</h4>
-            <p>{{ formattedOperatingHours }}</p>
-          </div>
-          <div class="info-item">
-            <h4>Lokasi Utama</h4>
-            <p>{{ shopSettings.address }}</p>
-          </div>
+      <div class="info-grid">
+        <div class="info-item">
+          <h4>Jam Operasional</h4>
+          <p>{{ formattedOperatingHours }}</p>
+        </div>
+        <div class="info-item">
+          <h4>Lokasi Utama</h4>
+          <p>{{ shopSettings.address }}</p>
         </div>
       </div>
-    </main>
-  </div>
+    </div>
+  </main>
 </template>
 
 <script setup>
@@ -73,10 +41,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
-const isLoggedIn = ref(false)
-const userRole = ref('')
-
-// Lokasi default ditetapkan langsung ke lokasi kamu
+// Lokasi default ditetapkan langsung
 const shopSettings = ref({
   name: 'Barberly',
   address: 'Payolansek, Payakumbuh Barat, Kota Payakumbuh, Sumatra Barat 26219',
@@ -85,7 +50,7 @@ const shopSettings = ref({
   operating_hours: 'Senin - Minggu: 09:00 - 21:00 WIB'
 })
 
-// Format jam operasional (Diperbaiki dari typo sblmnya)
+// Format jam operasional yang sudah diperbaiki
 const formattedOperatingHours = computed(() => {
   if (shopSettings.value.open_at && shopSettings.value.close_at) {
     return `Senin - Minggu: ${shopSettings.value.open_at} - ${shopSettings.value.close_at} WIB`
@@ -121,101 +86,11 @@ const fetchSettings = async () => {
 }
 
 onMounted(() => {
-  const token = localStorage.getItem('token')
-  const role = localStorage.getItem('role') || localStorage.getItem('user_role')
-  
-  if (token) {
-    isLoggedIn.value = true
-    userRole.value = role
-  }
   fetchSettings()
 })
-
-const handleLogout = () => {
-  localStorage.clear()
-  isLoggedIn.value = false
-  userRole.value = ''
-  router.push('/login')
-}
 </script>
 
 <style scoped>
-.tentang-page {
-  min-height: 100vh;
-  background-color: #121212;
-  color: #ffffff;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.2rem 3rem;
-  background-color: #000000;
-  color: #ffffff;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.brand {
-  font-size: 1.6rem;
-  font-family: serif;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.nav-links {
-  display: flex;
-  gap: 2rem;
-}
-
-.nav-links a {
-  color: #b0b0b0;
-  text-decoration: none;
-  font-size: 1rem;
-  transition: color 0.2s ease;
-}
-
-.nav-links a:hover,
-.nav-links .router-link-active {
-  color: #ffffff;
-}
-
-.admin-dashboard-link {
-  color: #ffc107 !important;
-  font-weight: bold;
-}
-
-.btn-login {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: #ffffff;
-  padding: 0.5rem 1.2rem;
-  border-radius: 4px;
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-}
-
-.btn-login:hover {
-  background: #ffffff;
-  color: #000000;
-}
-
-.btn-logout {
-  background: #ef4444;
-  border: none;
-  color: #ffffff;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.btn-logout:hover {
-  background: #dc2626;
-}
-
 .container {
   max-width: 900px;
   margin: 0 auto;

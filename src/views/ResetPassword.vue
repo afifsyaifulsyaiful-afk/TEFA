@@ -1,5 +1,8 @@
 <template>
   <div class="reset-container">
+    <!-- Komponen Toast untuk Notifikasi Modern -->
+    <Toast ref="toastRef" />
+
     <div class="reset-card">
       <div class="brand-title">BARBERLY</div>
       <h2>Buat Password Baru</h2>
@@ -67,6 +70,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Toast from '@/components/Toast.vue' // Sesuaikan path jika direktori komponen berbeda
 
 const route = useRoute()
 const router = useRouter()
@@ -76,25 +80,28 @@ const newPassword = ref('')
 const confirmPassword = ref('')
 const showPassword = ref(false)
 const isLoading = ref(false)
+const toastRef = ref(null)
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 
 onMounted(() => {
   email.value = route.query.email || ''
   if (!email.value) {
-    alert('Email tidak ditemukan, silakan ulangi proses lupa password.')
-    router.push('/forgot-password')
+    // Jika email tidak ada di query, beritahu dan arahkan kembali
+    setTimeout(() => {
+      router.push('/forgot-password')
+    }, 500)
   }
 })
 
 const handleResetPassword = async () => {
   if (newPassword.value.length < 6) {
-    alert('Password minimal terdiri dari 6 karakter.')
+    toastRef.value?.triggerToast('Password minimal terdiri dari 6 karakter.', 'error')
     return
   }
 
   if (newPassword.value !== confirmPassword.value) {
-    alert('Konfirmasi password tidak cocok dengan password baru.')
+    toastRef.value?.triggerToast('Konfirmasi password tidak cocok dengan password baru.', 'error')
     return
   }
 
@@ -115,14 +122,19 @@ const handleResetPassword = async () => {
     const data = await res.json()
 
     if (res.ok) {
-      alert('Password berhasil diperbarui! Silakan login dengan password baru Anda.')
-      router.push('/login')
+      toastRef.value?.triggerToast('Password berhasil diperbarui! Silakan login dengan password baru Anda.', 'success')
+      
+      // Beri jeda 1.5 detik agar toast sempat terbaca sebelum berpindah ke halaman login
+      setTimeout(() => {
+        router.push('/login')
+      }, 1500)
     } else {
-      alert(data.error || 'Gagal memperbarui password.')
+      const errorMsg = data.error || 'Gagal memperbarui password.'
+      toastRef.value?.triggerToast(errorMsg, 'error')
     }
   } catch (err) {
     console.error(err)
-    alert('Gagal terhubung ke server. Pastikan backend Go sedang berjalan.')
+    toastRef.value?.triggerToast('Gagal terhubung ke server. Pastikan backend Go sedang berjalan.', 'error')
   } finally {
     isLoading.value = false
   }

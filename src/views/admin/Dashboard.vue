@@ -30,7 +30,7 @@
     <!-- Tabel Booking Terbaru -->
     <div class="table-section">
       <div class="table-header">
-        <h3>Booking Terbaru</h3>
+        <h3>Booking Terbaru (Menunggu Konfirmasi)</h3>
         <span class="indicator-info" v-if="isPhoneLogin">Mode: Login No. Telepon (Menampilkan No. HP)</span>
       </div>
 
@@ -55,7 +55,7 @@
           </thead>
           <tbody>
             <tr v-if="recentBookings.length === 0">
-              <td :colspan="isPhoneLogin ? 7 : 6" class="empty-text">Belum ada data booking.</td>
+              <td :colspan="isPhoneLogin ? 7 : 6" class="empty-text">Belum ada data booking yang perlu diproses.</td>
             </tr>
             <tr v-for="booking in recentBookings" :key="booking.id">
               <td>{{ booking.id }}</td>
@@ -144,11 +144,12 @@ const fetchDashboardStats = async () => {
 
     const result = await response.json()
 
-    if (response.ok && result.data) {
-      stats.value.totalCustomers = result.data.total_pelanggan || 0
-      stats.value.totalBookings = result.data.total_booking || 0
-      stats.value.totalServices = result.data.total_layanan || 0
-      stats.value.totalRevenue = result.data.total_pendapatan || 0
+    if (response.ok) {
+      // Memetakan langsung dari root object JSON backend
+      stats.value.totalCustomers = result.total_pelanggan || result.total_customers || 0
+      stats.value.totalBookings = result.total_booking || result.total_bookings || 0
+      stats.value.totalServices = result.total_layanan || result.total_services || 0
+      stats.value.totalRevenue = result.total_pendapatan || result.total_revenue || 0
     }
   } catch (err) {
     console.error('Gagal mengambil data statistik:', err)
@@ -157,7 +158,7 @@ const fetchDashboardStats = async () => {
   }
 }
 
-// Fetch data list booking untuk tabel (/bookings)
+// Fetch data list booking langsung difilter ?status=pending dari backend
 const fetchDashboardData = async () => {
   isLoading.value = true
   errorMessage.value = ''
@@ -171,7 +172,7 @@ const fetchDashboardData = async () => {
       return
     }
 
-    const response = await fetch(`${API_BASE_URL}/bookings`, {
+    const response = await fetch(`${API_BASE_URL}/bookings?status=pending`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

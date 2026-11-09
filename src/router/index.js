@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 // LAYOUTS
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import CustomerLayout from '@/layouts/CustomerLayout.vue'
 
 // VIEWS - PUBLIC / USER
 import Home from '@/views/Home.vue'
@@ -23,12 +24,40 @@ import Laporan from '@/views/admin/Laporan.vue'
 import Settings from '@/views/admin/Settings.vue'
 
 const routes = [
-  // --- PUBLIC / PELANGGAN ROUTES ---
+  // --- PUBLIC / PELANGGAN ROUTES DENGAN CUSTOMER LAYOUT ---
   {
     path: '/',
-    name: 'Home',
-    component: Home
+    component: CustomerLayout,
+    children: [
+      {
+        path: '',
+        name: 'Home',
+        component: Home
+      },
+      {
+        path: 'profil',
+        name: 'ProfilSaya',
+        component: ProfilSaya
+      },
+      {
+        path: 'layanan',
+        name: 'Layanan',
+        component: PublicLayanan 
+      },
+      {
+        path: 'my-bookings',
+        name: 'MyBookings',
+        component: MyBookings
+      },
+      {
+        path: 'tentang',
+        name: 'TentangKami',
+        component: TentangKami
+      }
+    ]
   },
+
+  // --- AUTH ROUTES (TANPA NAVBAR UTAMA PELANGGAN) ---
   {
     path: '/login',
     name: 'Login',
@@ -48,26 +77,6 @@ const routes = [
     path: '/reset-password',
     name: 'ResetPassword',
     component: ResetPassword
-  },
-  {
-    path: '/profil',
-    name: 'ProfilSaya',
-    component: ProfilSaya
-  },
-  {
-    path: '/layanan',
-    name: 'Layanan',
-    component: PublicLayanan // UI Pilihan Layanan & Booking untuk Pelanggan
-  },
-  {
-    path: '/my-bookings',
-    name: 'MyBookings',
-    component: MyBookings
-  },
-  {
-    path: '/tentang',
-    name: 'TentangKami',
-    component: TentangKami
   },
 
   // --- ADMIN NESTED ROUTES ---

@@ -1,5 +1,8 @@
 <template>
   <div class="register-container">
+    <!-- Komponen Toast untuk Notifikasi Modern -->
+    <Toast ref="toastRef" />
+
     <div class="register-card">
       <h2>Daftar Akun Baru</h2>
       <p class="subtitle">Buat akun untuk mulai booking layanan kami</p>
@@ -94,9 +97,12 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import Toast from '@/components/Toast.vue' // Sesuaikan path jika direktori komponen berbeda
 
 const router = useRouter()
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
+const toastRef = ref(null)
 
 const form = ref({
   name: '',
@@ -104,9 +110,7 @@ const form = ref({
   password: ''
 })
 
-// Menyimpan nama email depan yang diisi user
 const emailPrefix = ref('')
-
 const showPassword = ref(false)
 const loading = ref(false)
 const emailError = ref('')
@@ -116,7 +120,6 @@ const handleRegister = async () => {
   emailError.value = ''
   errorMessage.value = ''
 
-  // Bersihkan input depan dari karakter spasi / simbol tidak valid jika ada
   const cleanPrefix = emailPrefix.value.trim().toLowerCase()
 
   if (!cleanPrefix) {
@@ -124,9 +127,7 @@ const handleRegister = async () => {
     return
   }
 
-  // Gabungkan prefix dengan domain tetap
   const fullEmail = `${cleanPrefix}@barberly.com`
-
   loading.value = true
 
   try {
@@ -146,14 +147,21 @@ const handleRegister = async () => {
     const data = await res.json()
 
     if (res.ok) {
-      alert('Registrasi akun Barberly berhasil! Silakan login.')
-      router.push('/login')
+      // Tampilkan toast sukses alih-alih alert bawaan browser
+      toastRef.value?.triggerToast('Registrasi akun Barberly berhasil! Silakan login.', 'success')
+      
+      // Beri jeda sebentar (1.5 detik) agar toast sempat terbaca sebelum pindah halaman
+      setTimeout(() => {
+        router.push('/login')
+      }, 1500)
     } else {
       errorMessage.value = data.error || 'Registrasi gagal, silakan coba lagi.'
+      toastRef.value?.triggerToast(errorMessage.value, 'error')
     }
   } catch (err) {
     console.error(err)
     errorMessage.value = 'Gagal terhubung ke server backend.'
+    toastRef.value?.triggerToast(errorMessage.value, 'error')
   } finally {
     loading.value = false
   }
@@ -223,7 +231,6 @@ h2 {
   border-color: #2563eb;
 }
 
-/* Custom Email Input dengan Suffix Terkunci */
 .email-input-wrapper {
   display: flex;
   align-items: center;

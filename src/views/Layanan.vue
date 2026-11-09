@@ -1,98 +1,51 @@
 <template>
-  <div class="layanan-page">
-    <!-- Navbar -->
-    <header class="navbar">
-      <div class="brand" @click="router.push('/')">Barberly</div>
-      <nav class="nav-links">
-        <router-link to="/">Home</router-link>
-        <router-link to="/layanan">Layanan</router-link>
-        
-        <!-- Tampilkan "Booking Saya" HANYA jika sudah login dan BUKAN admin -->
-        <router-link v-if="isLoggedIn && userRole !== 'admin'" to="/my-bookings">
-          Booking Saya
-        </router-link>
+  <div class="container">
+    <div class="header-section">
+      <h1>Pilih Barber Pilihanmu</h1>
+      <p class="subjudul">Pilih tukang cukur profesional kami dan tentukan jadwal cukur favoritmu</p>
+    </div>
 
-        <!-- Tampilkan "Dashboard Admin" HANYA jika yang login adalah admin -->
-        <router-link v-if="isLoggedIn && userRole === 'admin'" to="/admin/dashboard" class="admin-dashboard-link">
-          Dashboard Admin
-        </router-link>
+    <!-- State Loading & Error -->
+    <div v-if="isLoading" class="state-box">Memuat daftar barber...</div>
+    <div v-else-if="errorMessage" class="state-box error">{{ errorMessage }}</div>
 
-        <router-link to="/tentang">Tentang Kami</router-link>
-      </nav>
-
-      <!-- Auth Buttons -->
-      <div class="nav-auth">
-        <router-link v-if="!isLoggedIn" to="/login" class="btn-login">
-          Masuk
-        </router-link>
-        <button v-else @click="handleLogout" class="btn-logout">
-          Keluar
-        </button>
-      </div>
-    </header>
-
-    <main class="container">
-      <div class="header-section">
-        <h1>Pilih Layanan Cukur</h1>
-        <p class="subjudul">Pilih layanan terbaik kami dan tentukan jadwal cukur favoritmu</p>
-      </div>
-
-      <!-- State Loading & Error -->
-      <div v-if="isLoading" class="state-box">Memuat daftar layanan...</div>
-      <div v-else-if="errorMessage" class="state-box error">{{ errorMessage }}</div>
-
-      <!-- Grid Daftar Layanan Pelanggan -->
-      <div v-else class="services-grid">
-        <div v-for="service in services" :key="service.id" class="service-card">
-          <div class="card-body">
-            <h3 class="service-title">{{ service.name }}</h3>
-            <p class="service-duration">Durasi: {{ service.duration || 30 }} Menit</p>
-            <p class="service-price">Rp {{ Number(service.price).toLocaleString('id-ID') }}</p>
+    <!-- Grid Katalog Barber (Barber-Centric) -->
+    <div v-else class="barbers-grid">
+      <div v-for="b in barbers" :key="b.id" class="barber-card-box">
+        <div class="avatar-wrapper">
+          <img :src="b.avatar ? `${API_BASE_URL.replace('/api', '')}${b.avatar}` : 'https://via.placeholder.com/100'" 
+               alt="Avatar" class="barber-avatar-grid" />
+        </div>
+        <div class="barber-info">
+          <h3 class="barber-name">{{ b.name }}</h3>
+          <p class="barber-desc">{{ b.description || 'Belum ada deskripsi profil.' }}</p>
+          <div class="barber-rating">
+            Rating: {{ (b.average_rating || 0).toFixed(1) }} / 5.0 ({{ b.total_reviews || 0 }} ulasan)
           </div>
-          <div class="card-footer">
-            <!-- Tombol Booking HANYA muncul jika BUKAN admin -->
-            <button v-if="userRole !== 'admin'" class="btn-book" @click="openBookingModal(service)">
-              Booking Sekarang
-            </button>
-            <!-- Label khusus untuk Admin -->
-            <div v-else class="admin-notice">
-              <span>Mode Lihat Admin (Booking Dinonaktifkan)</span>
-            </div>
+          <div class="schedule-info">
+            <span class="schedule-text">Hari: {{ b.work_days || 'Senin - Sabtu' }}</span>
+            <span class="schedule-text">Jam: {{ b.operational_hours || '08:00 - 22:00 WIB' }}</span>
+          </div>
+        </div>
+        <div class="card-footer">
+          <!-- Tombol Booking HANYA muncul jika BUKAN admin -->
+          <button v-if="userRole !== 'admin'" class="btn-book" @click="openBookingModal(b)">
+            Booking Sekarang
+          </button>
+          <!-- Label khusus untuk Admin -->
+          <div v-else class="admin-notice">
+            <span>Mode Lihat Admin (Booking Dinonaktifkan)</span>
           </div>
         </div>
       </div>
-    </main>
+    </div>
 
-    <!-- Modal Form Booking -->
+    <!-- Modal Form Booking Barber-Centric -->
     <div v-if="showModal" class="modal-overlay">
       <div class="modal-content">
-        <h3>Booking Layanan: {{ selectedService?.name }}</h3>
+        <h3>Booking dengan Barber: {{ selectedBarber?.name }}</h3>
         
         <form @submit.prevent="submitBooking">
-          <!-- Pilih Barber -->
-          <div class="form-group">
-            <label>Pilih Barber</label>
-            <div class="barber-list-container">
-              <div 
-                v-for="b in barbers" 
-                :key="b.id" 
-                :class="['barber-list-item', { active: bookingForm.barber_id === b.id }]"
-                @click="selectBarber(b.id)"
-              >
-                <img 
-                  :src="b.avatar ? `${API_BASE_URL.replace('/api', '')}${b.avatar}` : 'https://via.placeholder.com/60'" 
-                  alt="Avatar" 
-                  class="barber-list-avatar"
-                />
-                <div class="barber-list-info">
-                  <span class="barber-list-name">{{ b.name }}</span>
-                  <span class="barber-list-spec">{{ b.specialty || 'Semua Layanan' }}</span>
-                </div>
-                <div class="radio-indicator"></div>
-              </div>
-            </div>
-          </div>
-
           <!-- Pilihan Hari Cukur -->
           <div class="form-group">
             <label>Pilih Hari & Tanggal Cukur</label>
@@ -161,16 +114,14 @@ const router = useRouter()
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const toastRef = ref(null)
-const isLoggedIn = ref(false)
 const userRole = ref('')
-const services = ref([])
 const barbers = ref([])
 const bookedTimes = ref([])
 const isLoading = ref(true)
 const errorMessage = ref('')
 
 const showModal = ref(false)
-const selectedService = ref(null)
+const selectedBarber = ref(null)
 const isSubmitting = ref(false)
 
 const allTimeSlots = [
@@ -204,20 +155,19 @@ const quickDates = computed(() => {
 })
 
 const bookingForm = ref({
-  barber_id: '',
   booking_date: '',
   booking_time: ''
 })
 
 const fetchBookedSlots = async () => {
-  if (!bookingForm.value.barber_id || !bookingForm.value.booking_date) {
+  if (!selectedBarber.value || !bookingForm.value.booking_date) {
     bookedTimes.value = []
     return
   }
 
   const token = localStorage.getItem('token')
   try {
-    const response = await fetch(`${API_BASE_URL}/bookings?barber_id=${bookingForm.value.barber_id}&date=${bookingForm.value.booking_date}`, {
+    const response = await fetch(`${API_BASE_URL}/bookings?barber_id=${selectedBarber.value.id}&date=${bookingForm.value.booking_date}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     const data = await response.json()
@@ -235,14 +185,9 @@ const fetchBookedSlots = async () => {
   }
 }
 
-watch(() => [bookingForm.value.barber_id, bookingForm.value.booking_date], () => {
+watch(() => bookingForm.value.booking_date, () => {
   fetchBookedSlots()
 })
-
-const selectBarber = (id) => {
-  bookingForm.value.barber_id = id
-  bookingForm.value.booking_time = ''
-}
 
 const selectDate = (dateVal) => {
   bookingForm.value.booking_date = dateVal
@@ -281,31 +226,38 @@ const fetchData = async () => {
   const token = localStorage.getItem('token')
 
   try {
-    const resS = await fetch(`${API_BASE_URL}/services`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    const dataS = await resS.json()
-    if (resS.ok) {
-      const rawS = dataS.data || dataS
-      services.value = rawS.map(s => ({
-        id: s.ID || s.id,
-        name: s.Name || s.name,
-        price: s.Price || s.price,
-        duration: s.Duration || s.duration || 30
-      }))
-    }
-
     const resB = await fetch(`${API_BASE_URL}/barbers`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     const dataB = await resB.json()
     if (resB.ok) {
       const rawB = dataB.data || dataB
-      barbers.value = rawB.map(b => ({
-        id: b.ID || b.id,
-        name: b.Name || b.name,
-        specialty: b.Specialty || b.specialty,
-        avatar: b.Avatar || b.avatar
+      
+      barbers.value = await Promise.all(rawB.map(async b => {
+        const bId = b.ID || b.id
+        let avgRating = 0
+        let totalRev = 0
+        try {
+          const revRes = await fetch(`${API_BASE_URL}/barbers/${bId}/reviews`)
+          const revData = await revRes.json()
+          if (revRes.ok) {
+            avgRating = revData.average_rating || 0
+            totalRev = revData.total_reviews || 0
+          }
+        } catch (e) {
+          console.error('Gagal mengambil review barber', e)
+        }
+
+        return {
+          id: bId,
+          name: b.Name || b.name,
+          description: b.Description || b.description || '',
+          avatar: b.Avatar || b.avatar,
+          work_days: b.WorkDays || b.work_days || 'Senin - Sabtu',
+          operational_hours: b.OperationalHours || b.operational_hours || '08:00 - 22:00 WIB',
+          average_rating: avgRating,
+          total_reviews: totalRev
+        }
       }))
     }
   } catch (err) {
@@ -315,7 +267,7 @@ const fetchData = async () => {
   }
 }
 
-const openBookingModal = (service) => {
+const openBookingModal = (barber) => {
   const token = localStorage.getItem('token')
   if (!token) {
     toastRef.value?.triggerToast('Silakan login terlebih dahulu untuk membuat booking.', 'error')
@@ -323,33 +275,27 @@ const openBookingModal = (service) => {
     return
   }
 
-  // Pencegahan ekstra jika admin mencoba membuka modal
   if (userRole.value === 'admin') {
-    toastRef.value?.triggerToast('Akun Admin tidak dapat melakukan booking layanan.', 'error')
+    toastRef.value?.triggerToast('Akun Admin tidak dapat melakukan booking.', 'error')
     setTimeout(() => router.push('/admin/dashboard'), 1500)
     return
   }
 
-  selectedService.value = service
+  selectedBarber.value = barber
   const todayStr = new Date().toLocaleDateString('en-CA')
   
-  bookingForm.value = { barber_id: '', booking_date: todayStr, booking_time: '' }
+  bookingForm.value = { booking_date: todayStr, booking_time: '' }
   bookedTimes.value = []
   showModal.value = true
 }
 
 const submitBooking = async () => {
-  // Blokir jika role adalah admin
   if (userRole.value === 'admin') {
     toastRef.value?.triggerToast('Aksi ditolak: Admin tidak diizinkan melakukan booking.', 'error')
     setTimeout(() => router.push('/admin/dashboard'), 1500)
     return
   }
 
-  if (!bookingForm.value.barber_id) {
-    toastRef.value?.triggerToast('Harap pilih barber terlebih dahulu!', 'error')
-    return
-  }
   if (!bookingForm.value.booking_date || !bookingForm.value.booking_time) {
     toastRef.value?.triggerToast('Harap pilih tanggal dan jam booking!', 'error')
     return
@@ -368,8 +314,7 @@ const submitBooking = async () => {
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        service_id: Number(selectedService.value.id),
-        barber_id: Number(bookingForm.value.barber_id),
+        barber_id: Number(selectedBarber.value.id),
         booking_time: combinedDateTime
       })
     })
@@ -390,19 +335,9 @@ const submitBooking = async () => {
   }
 }
 
-const handleLogout = () => {
-  localStorage.clear()
-  isLoggedIn.value = false
-  userRole.value = ''
-  router.push('/login')
-}
-
 onMounted(() => {
-  const token = localStorage.getItem('token')
   const role = localStorage.getItem('role') || localStorage.getItem('user_role')
-  
-  if (token) {
-    isLoggedIn.value = true
+  if (role) {
     userRole.value = role
   }
   fetchData()
@@ -410,76 +345,117 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.layanan-page { min-height: 100vh; background-color: #121212; color: #fff; }
+.container { 
+  max-width: 1000px; 
+  margin: 0 auto; 
+  padding: 2rem 1.5rem; 
 
-/* Navbar dengan sistem Absolute Centering agar menu selalu presisi di tengah */
-.navbar { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  padding: 1.2rem 3rem; 
-  background-color: #000; 
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
-  position: relative;
-}
-.brand { 
-  font-size: 1.6rem; 
-  font-family: serif; 
-  font-weight: bold; 
-  cursor: pointer; 
-  z-index: 2; 
-}
-.nav-links { 
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex; 
-  gap: 2rem; 
-  z-index: 1;
-}
-.nav-links a { color: #b0b0b0; text-decoration: none; }
-.nav-links a.router-link-active { color: #fff; font-weight: bold; }
-
-.admin-dashboard-link {
-  color: #ffc107 !important;
-  font-weight: bold;
+  /* Menghilangkan scrollbar vertikal pada container halaman Layanan */
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE dan Edge */
 }
 
-.nav-auth {
-  z-index: 2;
+/* Chrome, Safari, dan Opera */
+.container::-webkit-scrollbar {
+  display: none;
 }
 
-.btn-logout { background: #ef4444; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
-
-.btn-login {
-  background: transparent;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 0.5rem 1.2rem;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-.btn-login:hover {
-  border-color: #f59e0b;
-  color: #f59e0b;
-}
-
-.container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem; }
 .header-section { text-align: center; margin-bottom: 2.5rem; }
 .subjudul { color: #94a3b8; }
 
 .state-box { text-align: center; padding: 3rem; color: #94a3b8; }
 .state-box.error { color: #f87171; }
 
-.services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
-.service-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; }
-.service-title { font-size: 1.2rem; margin-top: 0; margin-bottom: 0.5rem; color: #f8fafc; }
-.service-duration { font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem; }
-.service-price { font-size: 1.3rem; font-weight: bold; color: #4ade80; margin: 0; }
+.barbers-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+  gap: 1.5rem; 
+}
 
-.btn-book { background: #f59e0b; color: #000; border: none; width: 100%; padding: 0.75rem; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 1rem; }
+.barber-card-box {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.avatar-wrapper {
+  margin-bottom: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.barber-avatar-grid {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #f59e0b;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+}
+
+.barber-info {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.barber-name {
+  font-size: 1.2rem;
+  margin: 0 0 0.3rem 0;
+  color: #f8fafc;
+  font-weight: bold;
+}
+
+.barber-desc {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0 0 0.6rem 0;
+  line-height: 1.3;
+}
+
+.barber-rating {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #4ade80;
+  margin-bottom: 0.6rem;
+}
+
+.schedule-info {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.5rem;
+  font-size: 0.78rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.schedule-text {
+  color: #cbd5e1;
+}
+
+.card-footer {
+  width: 100%;
+  margin-top: auto;
+}
+
+.btn-book { 
+  background: #f59e0b; 
+  color: #000; 
+  border: none; 
+  width: 100%; 
+  padding: 0.75rem; 
+  border-radius: 8px; 
+  font-weight: bold; 
+  cursor: pointer; 
+}
 .btn-book:hover { background: #d97706; }
 
 .admin-notice {
@@ -490,12 +466,12 @@ onMounted(() => {
   background: rgba(251, 191, 36, 0.1);
   border-radius: 8px;
   font-weight: 500;
-  margin-top: 1rem;
 }
 
 /* Modal Styling */
 .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; z-index:100; }
 .modal-content { background: #1e293b; padding: 1.5rem; border-radius: 12px; border: 1px solid #334155; width: 100%; max-width: 480px; color: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+.modal-content h3 { margin-top: 0; margin-bottom: 1rem; color: #f8fafc; font-size: 1.1rem; }
 
 .form-group { margin-bottom: 0.9rem; }
 .form-group label { display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.3rem; font-weight: 600; }
@@ -525,68 +501,6 @@ onMounted(() => {
 
 .date-btn:hover { border-color: #f59e0b; color: #fff; }
 .date-btn.active { background: rgba(245, 158, 11, 0.2); border-color: #f59e0b; color: #fbbf24; }
-
-/* Barber List Compact */
-.barber-list-container {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  max-height: 135px;
-  overflow-y: auto;
-  padding-right: 0.2rem;
-}
-
-.barber-list-container::-webkit-scrollbar {
-  width: 4px;
-}
-.barber-list-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-.barber-list-container::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 4px;
-}
-
-.barber-list-item {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 0.45rem 0.7rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.barber-list-item:hover { border-color: #f59e0b; }
-.barber-list-item.active { border-color: #f59e0b; background: rgba(245, 158, 11, 0.12); }
-
-.barber-list-avatar {
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #f59e0b;
-}
-
-.barber-list-info { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-.barber-list-name { font-size: 0.88rem; font-weight: bold; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.barber-list-spec { font-size: 0.72rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.radio-indicator {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid #475569;
-}
-
-.barber-list-item.active .radio-indicator {
-  border-color: #f59e0b;
-  background: #f59e0b;
-  box-shadow: inset 0 0 0 2px #0f172a;
-}
 
 .payment-box { 
   background: #0f172a; 

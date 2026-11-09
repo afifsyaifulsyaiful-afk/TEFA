@@ -1,20 +1,24 @@
+<template>
+  <div class="home-container">
+    <!-- Hero Content -->
+    <main class="hero-section">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          Gaya Rambut Rapi,<br />
+          Tampil Percaya Diri Setiap Hari.
+        </h1>
+        <button @click="handleBookingClick" class="btn-booking">
+           Buat Booking Sekarang
+        </button>
+      </div>
+    </main>
+  </div>
+</template>
+
 <script setup>
-import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const isLoggedIn = ref(false)
-const userRole = ref('')
-
-onMounted(() => {
-  const token = localStorage.getItem('token')
-  const role = localStorage.getItem('role') || localStorage.getItem('user_role')
-  
-  if (token) {
-    isLoggedIn.value = true
-    userRole.value = role
-  }
-})
 
 // Logika Rute Tombol "Buat Booking Sekarang"
 const handleBookingClick = () => {
@@ -32,67 +36,11 @@ const handleBookingClick = () => {
     router.push('/layanan')
   }
 }
-
-// Logout
-const handleLogout = () => {
-  localStorage.clear()
-  isLoggedIn.value = false
-  userRole.value = ''
-  router.push('/login')
-}
 </script>
-
-<template>
-  <div class="home-container">
-    <!-- Navbar -->
-    <header class="navbar">
-      <div class="brand">Barberly</div>
-      <nav class="nav-links">
-        <router-link to="/">Home</router-link>
-        <router-link to="/layanan">Layanan</router-link>
-        
-        <!-- Tampilkan "Booking Saya" HANYA jika sudah login dan BUKAN admin -->
-        <router-link v-if="isLoggedIn && userRole !== 'admin'" to="/my-bookings">
-          Booking Saya
-        </router-link>
-
-        <!-- Tampilkan "Dashboard Admin" HANYA jika yang login adalah admin -->
-        <router-link v-if="isLoggedIn && userRole === 'admin'" to="/admin/dashboard" class="admin-dashboard-link">
-          Dashboard Admin
-        </router-link>
-
-        <router-link to="/tentang">Tentang Kami</router-link>
-      </nav>
-
-      <!-- Auth Buttons -->
-      <div class="nav-auth">
-        <router-link v-if="!isLoggedIn" to="/login" class="admin-link">
-          Masuk
-        </router-link>
-        <button v-else @click="handleLogout" class="btn-logout">
-          Keluar
-        </button>
-      </div>
-    </header>
-
-    <!-- Hero Content -->
-    <main class="hero-section">
-      <div class="hero-content">
-        <h1 class="hero-title">
-          Gaya Rambut Rapi,<br />
-          Tampil Percaya Diri Setiap Hari.
-        </h1>
-        <button @click="handleBookingClick" class="btn-booking">
-           Buat Booking Sekarang
-        </button>
-      </div>
-    </main>
-  </div>
-</template>
 
 <style scoped>
 .home-container {
-  min-height: 100vh;
+  min-height: calc(100vh - 80px); /* Menyesuaikan tinggi dengan navbar layout */
   /* Overlay gelap + background pattern */
   background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), 
               url('../assets/images/bg-barber.png');
@@ -106,82 +54,6 @@ const handleLogout = () => {
   display: flex;
   flex-direction: column;
   color: #ffffff;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.2rem 3rem;
-  background-color: #000000;
-  color: #ffffff;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.brand {
-  font-size: 1.6rem;
-  font-family: serif;
-  font-weight: bold;
-}
-
-.nav-links {
-  display: flex;
-  gap: 2rem;
-}
-
-.nav-links a {
-  color: #b0b0b0;
-  text-decoration: none;
-  font-size: 1rem;
-  transition: color 0.2s ease;
-}
-
-.nav-links a:hover,
-.nav-links .router-link-active {
-  color: #ffffff;
-}
-
-.admin-dashboard-link {
-  color: #ffc107 !important;
-  font-weight: bold;
-}
-
-.nav-auth {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.admin-link {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: #ffffff;
-  padding: 0.5rem 1.2rem;
-  border-radius: 4px;
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-}
-
-.admin-link:hover {
-  background: #ffffff;
-  color: #000000;
-  border-color: #ffffff;
-}
-
-.btn-logout {
-  background: #ef4444;
-  border: none;
-  color: #ffffff;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.btn-logout:hover {
-  background: #dc2626;
 }
 
 .hero-section {

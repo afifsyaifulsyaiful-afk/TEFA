@@ -1,105 +1,119 @@
 <template>
-  <div class="my-bookings-page">
-    <!-- Navbar -->
-    <header class="navbar">
-      <div class="brand" @click="router.push('/')">Barberly</div>
-      <nav class="nav-links">
-        <router-link to="/">Home</router-link>
-        <router-link to="/layanan">Layanan</router-link>
-        
-        <!-- Tampilkan "Booking Saya" HANYA jika sudah login dan BUKAN admin -->
-        <router-link v-if="isLoggedIn && userRole !== 'admin'" to="/my-bookings">
-          Booking Saya
-        </router-link>
+  <div class="container">
+    <div class="top-bar">
+      <button class="btn-back" @click="router.push('/')">
+        Kembali ke Beranda
+      </button>
+    </div>
 
-        <!-- Tampilkan "Dashboard Admin" HANYA jika yang login adalah admin -->
-        <router-link v-if="isLoggedIn && userRole === 'admin'" to="/admin/dashboard" class="admin-dashboard-link">
-          Dashboard Admin
-        </router-link>
+    <div class="header-section">
+      <h1>Booking Saya</h1>
+      <p class="subjudul">Cek status dan riwayat janji cukur rambutmu di sini</p>
+    </div>
 
-        <router-link to="/tentang">Tentang Kami</router-link>
-      </nav>
-      <div class="nav-auth">
-        <button class="btn-logout" @click="handleLogout">Keluar</button>
-      </div>
-    </header>
+    <!-- State Loading & Error -->
+    <div v-if="isLoading" class="state-box">
+      Memuat data booking...
+    </div>
+    <div v-else-if="errorMessage" class="state-box error">
+      {{ errorMessage }}
+    </div>
 
-    <main class="container">
-      <div class="top-bar">
-        <button class="btn-back" @click="router.push('/')">
-          ← Kembali ke Beranda
-        </button>
-      </div>
+    <!-- State Jika Belum Ada Booking -->
+    <div v-else-if="bookings.length === 0" class="empty-state">
+      <p>Kamu belum memiliki riwayat booking.</p>
+      <button class="btn-booking-now" @click="router.push('/layanan')">
+        Buat Booking Sekarang
+      </button>
+    </div>
 
-      <div class="header-section">
-        <h1>Booking Saya</h1>
-        <p class="subjudul">Cek status dan riwayat janji cukur rambutmu di sini</p>
-      </div>
+    <!-- Daftar Card Booking -->
+    <div v-else class="booking-grid">
+      <div 
+        v-for="item in bookings" 
+        :key="item.id" 
+        class="booking-card"
+      >
+        <div class="card-header">
+          <span class="service-name">Booking Barber: {{ item.barber?.name || item.barber_name || 'Barber' }}</span>
+          <span :class="['status-badge', getStatusClass(item.status)]">
+            {{ formatStatus(item.status) }}
+          </span>
+        </div>
 
-      <!-- State Loading & Error -->
-      <div v-if="isLoading" class="state-box">
-        Memuat data booking...
-      </div>
-      <div v-else-if="errorMessage" class="state-box error">
-        {{ errorMessage }}
-      </div>
-
-      <!-- State Jika Belum Ada Booking -->
-      <div v-else-if="bookings.length === 0" class="empty-state">
-        <p>Kamu belum memiliki riwayat booking.</p>
-        <button class="btn-booking-now" @click="router.push('/layanan')">
-          Buat Booking Sekarang
-        </button>
-      </div>
-
-      <!-- Daftar Card Booking -->
-      <div v-else class="booking-grid">
-        <div 
-          v-for="item in bookings" 
-          :key="item.id" 
-          class="booking-card"
-        >
-          <div class="card-header">
-            <span class="service-name">{{ item.service?.name || item.service_name || 'Layanan' }}</span>
-            <span :class="['status-badge', getStatusClass(item.status)]">
-              {{ formatStatus(item.status) }}
+        <div class="card-body">
+          <div class="info-row">
+            <span class="label">Barber:</span>
+            <span class="val">{{ item.barber?.name || item.barber_name || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Tanggal & Jam:</span>
+            <span class="val highlight">{{ formatDate(item.booking_time) }}</span>
+          </div>
+          <!-- Informasi Metode Pembayaran -->
+          <div class="info-row payment-info">
+            <span class="label">Metode Pembayaran:</span>
+            <span class="val payment-method">
+              Bayar Tunai di Kasir 
+              <small class="payment-status-tag" :class="item.status === 'completed' ? 'tag-paid' : 'tag-unpaid'">
+                ({{ item.status === 'completed' ? 'Lunas' : 'Bayar Setelah Cukur' }})
+              </small>
             </span>
           </div>
+        </div>
 
-          <div class="card-body">
-            <div class="info-row">
-              <span class="label">Barber:</span>
-              <span class="val">{{ item.barber?.name || item.barber_name || '-' }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Tanggal & Jam:</span>
-              <span class="val highlight">{{ formatDate(item.booking_time) }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Harga:</span>
-              <span class="val price">Rp {{ Number(item.service?.price || item.price || 0).toLocaleString('id-ID') }}</span>
-            </div>
-            <!-- Informasi Metode Pembayaran Tanpa Emoji -->
-            <div class="info-row payment-info">
-              <span class="label">Metode Pembayaran:</span>
-              <span class="val payment-method">
-                Bayar Tunai di Kasir 
-                <small class="payment-status-tag" :class="item.status === 'completed' ? 'tag-paid' : 'tag-unpaid'">
-                  ({{ item.status === 'completed' ? 'Lunas' : 'Bayar Setelah Cukur' }})
-                </small>
-              </span>
-            </div>
-          </div>
+        <!-- Footer Card: Batalkan Booking atau Beri Ulasan / Status Ulasan Terkirim -->
+        <div class="card-footer">
+          <!-- Tombol Batal jika masih pending / confirmed -->
+          <button v-if="item.status === 'pending' || item.status === 'confirmed'" class="btn-cancel" @click="cancelBooking(item.id || item.ID)">
+            Batalkan Booking
+          </button>
 
-          <!-- Batalkan Booking -->
-          <div v-if="item.status === 'pending' || item.status === 'confirmed'" class="card-footer">
-            <button class="btn-cancel" @click="cancelBooking(item.id)">
-              Batalkan Booking
-            </button>
-          </div>
+          <!-- Tombol Beri Ulasan jika sudah selesai (completed) dan belum direview -->
+          <button v-if="item.status === 'completed' && !item.review && !item.Review" class="btn-review" @click="openReviewModal(item)">
+            Beri Ulasan Barber
+          </button>
+
+          <!-- Keterangan jika sudah selesai dan sudah pernah di-review -->
+          <span v-if="item.status === 'completed' && (item.review || item.Review)" class="reviewed-tag">
+            Ulasan Telah Dikirim ({{ (item.review || item.Review).rating }} Bintang)
+          </span>
         </div>
       </div>
-    </main>
+    </div>
+
+    <!-- Modal Beri Ulasan -->
+    <div v-if="showReviewModal" class="modal-overlay">
+      <div class="modal-content">
+        <h3>Beri Ulasan untuk Barber</h3>
+        <p class="modal-subtitle">Bagikan pengalaman cukur rambut Anda bersama <strong>{{ selectedBookingForReview?.barber?.name || selectedBookingForReview?.barber_name || 'Barber' }}</strong></p>
+        
+        <form @submit.prevent="submitReview">
+          <div class="form-group">
+            <label>Rating (1 - 5 Bintang)</label>
+            <select v-model="reviewForm.rating" class="form-select" required>
+              <option value="5">5 Bintang (Sangat Puas)</option>
+              <option value="4">4 Bintang (Puas)</option>
+              <option value="3">3 Bintang (Cukup)</option>
+              <option value="2">2 Bintang (Kurang)</option>
+              <option value="1">1 Bintang (Sangat Buruk)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Komentar / Ulasan</label>
+            <textarea v-model="reviewForm.comment" rows="3" placeholder="Tuliskan komentar atau pujian untuk hasil cukur..." class="form-textarea"></textarea>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" @click="showReviewModal = false" class="btn-secondary">Batal</button>
+            <button type="submit" :disabled="isSubmittingReview" class="btn-primary">
+              {{ isSubmittingReview ? 'Mengirim...' : 'Kirim Ulasan' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- Komponen Toast Terpusat -->
     <Toast ref="toastRef" />
@@ -115,11 +129,19 @@ const router = useRouter()
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 const toastRef = ref(null)
-const isLoggedIn = ref(false)
 const userRole = ref('')
 const bookings = ref([])
 const isLoading = ref(true)
 const errorMessage = ref('')
+
+// State untuk Modal Review
+const showReviewModal = ref(false)
+const selectedBookingForReview = ref(null)
+const reviewForm = ref({
+  rating: 5,
+  comment: ''
+})
+const isSubmittingReview = ref(false)
 
 const fetchMyBookings = async () => {
   isLoading.value = true
@@ -183,9 +205,53 @@ const formatStatus = (status) => {
   }
 }
 
+// Buka Modal Review
+const openReviewModal = (booking) => {
+  selectedBookingForReview.value = booking
+  reviewForm.value = { rating: 5, comment: '' }
+  showReviewModal.value = true
+}
+
+// Kirim Ulasan ke Backend
+const submitReview = async () => {
+  if (!selectedBookingForReview.value) return
+
+  isSubmittingReview.value = true
+  try {
+    const token = localStorage.getItem('token')
+    const bookingId = selectedBookingForReview.value.id || selectedBookingForReview.value.ID
+
+    const res = await fetch(`${API_BASE_URL}/reviews`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        booking_id: Number(bookingId),
+        rating: Number(reviewForm.value.rating),
+        comment: reviewForm.value.comment
+      })
+    })
+
+    const result = await res.json()
+    if (res.ok) {
+      toastRef.value?.triggerToast('Ulasan berhasil dikirim!', 'success')
+      showReviewModal.value = false
+      fetchMyBookings()
+    } else {
+      toastRef.value?.triggerToast(result.error || 'Gagal mengirim ulasan.', 'error')
+    }
+  } catch (err) {
+    console.error(err)
+    toastRef.value?.triggerToast('Terjadi kesalahan jaringan.', 'error')
+  } finally {
+    isSubmittingReview.value = false
+  }
+}
+
 // Batalkan Booking dengan Toast
 const cancelBooking = async (id) => {
-  // Langsung proses pembatalan tanpa confirm() bawaan browser
   try {
     const token = localStorage.getItem('token')
     const response = await fetch(`${API_BASE_URL}/bookings/${id}/cancel`, {
@@ -207,11 +273,6 @@ const cancelBooking = async (id) => {
   }
 }
 
-const handleLogout = () => {
-  localStorage.clear()
-  router.push('/login')
-}
-
 onMounted(() => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role') || localStorage.getItem('user_role')
@@ -221,7 +282,6 @@ onMounted(() => {
     return
   }
 
-  isLoggedIn.value = true
   userRole.value = role
 
   if (role === 'admin') {
@@ -235,59 +295,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.my-bookings-page {
-  min-height: 100vh;
-  background-color: #121212;
-  color: #ffffff;
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.2rem 3rem;
-  background-color: #000000;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.brand {
-  font-size: 1.6rem;
-  font-family: serif;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.nav-links {
-  display: flex;
-  gap: 2rem;
-}
-
-.nav-links a {
-  color: #b0b0b0;
-  text-decoration: none;
-  font-size: 1rem;
-}
-
-.nav-links a.active,
-.nav-links a:hover,
-.nav-links .router-link-active {
-  color: #ffffff;
-}
-
-.admin-dashboard-link {
-  color: #ffc107 !important;
-  font-weight: bold;
-}
-
-.btn-logout {
-  background: #ef4444;
-  border: none;
-  color: #ffffff;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
 .container {
   max-width: 900px;
   margin: 0 auto;
@@ -421,11 +428,6 @@ h1 {
   color: #fbbf24;
 }
 
-.val.price {
-  font-weight: 700;
-  color: #4ade80;
-}
-
 .payment-info {
   margin-top: 0.2rem;
   padding-top: 0.4rem;
@@ -456,7 +458,10 @@ h1 {
   margin-top: 1.2rem;
   padding-top: 0.8rem;
   border-top: 1px solid #334155;
-  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .btn-cancel {
@@ -473,5 +478,126 @@ h1 {
 .btn-cancel:hover {
   background: #ef4444;
   color: #ffffff;
+}
+
+.btn-review {
+  background: #f59e0b;
+  border: none;
+  color: #000000;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-review:hover {
+  background: #d97706;
+}
+
+.reviewed-tag {
+  color: #4ade80;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(34, 197, 94, 0.1);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+/* Modal Styling */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #1e293b;
+  border: 1px solid #334155;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #f8fafc;
+  font-size: 1.25rem;
+}
+
+.modal-subtitle {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 0.4rem;
+}
+
+.form-select, .form-textarea {
+  width: 100%;
+  padding: 0.7rem;
+  background-color: #0f172a;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #f8fafc;
+  box-sizing: border-box;
+}
+
+.form-textarea {
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+}
+
+.btn-secondary {
+  background: #475569;
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #f59e0b;
+  color: #000000;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #d97706;
 }
 </style>

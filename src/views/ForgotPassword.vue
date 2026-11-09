@@ -1,5 +1,8 @@
 <template>
   <div class="forgot-container">
+    <!-- Komponen Toast untuk Notifikasi Modern -->
+    <Toast ref="toastRef" />
+
     <div class="forgot-card">
       <div class="brand-title">BARBERLY</div>
       <h2>Lupa Password?</h2>
@@ -32,15 +35,17 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import Toast from '@/components/Toast.vue' // Sesuaikan path jika direktori komponen berbeda
 
 const email = ref('')
 const isLoading = ref(false)
+const toastRef = ref(null)
 const router = useRouter()
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 
 const handleResetPassword = async () => {
   if (!email.value) {
-    alert('Silakan masukkan email terdaftar Anda.')
+    toastRef.value?.triggerToast('Silakan masukkan email terdaftar Anda.', 'error')
     return
   }
 
@@ -64,15 +69,19 @@ const handleResetPassword = async () => {
     const data = await res.json()
 
     if (res.ok) {
-      alert(`Email terverifikasi! Silakan buat password baru Anda.`)
-      // Arahkan langsung ke halaman reset-password beserta parameter email
-      router.push({ path: '/reset-password', query: { email: fullEmail } })
+      toastRef.value?.triggerToast('Email terverifikasi! Silakan buat password baru Anda.', 'success')
+      
+      // Beri jeda sebentar agar toast sempat terbaca sebelum berpindah halaman
+      setTimeout(() => {
+        router.push({ path: '/reset-password', query: { email: fullEmail } })
+      }, 1500)
     } else {
-      alert(data.error || 'Email tidak ditemukan dalam sistem.')
+      const errorMsg = data.error || 'Email tidak ditemukan dalam sistem.'
+      toastRef.value?.triggerToast(errorMsg, 'error')
     }
   } catch (err) {
     console.error(err)
-    alert('Gagal terhubung ke server. Pastikan backend Go sedang berjalan.')
+    toastRef.value?.triggerToast('Gagal terhubung ke server. Pastikan backend Go sedang berjalan.', 'error')
   } finally {
     isLoading.value = false
   }

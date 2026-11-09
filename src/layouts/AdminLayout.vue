@@ -8,11 +8,11 @@
       </div>
 
       <div class="user-profile">
-        <div class="avatar">👤</div>
+        <div class="avatar">A</div>
         <div class="user-info">
           <strong>Admin Barbershop</strong>
           <small>Administrator</small>
-          <span class="status-online">● Online</span>
+          <span class="status-online">Online</span>
         </div>
       </div>
 
@@ -21,7 +21,7 @@
         <router-link to="/admin/dashboard" class="menu-item" active-class="active">Dashboard</router-link>
         <router-link to="/admin/booking" class="menu-item" active-class="active">Kelola Booking</router-link>
         <router-link to="/admin/master" class="menu-item" active-class="active">Data Master</router-link>
-        <router-link to="/admin/reports" class="menu-item" active-class="active">Laporan Keuangan</router-link>
+        <router-link to="/admin/reports" class="menu-item" active-class="active">Laporan & Ulasan</router-link>
         <router-link to="/admin/settings" class="menu-item" active-class="active">Pengaturan</router-link>
       </nav>
 
@@ -67,7 +67,7 @@
           <!-- DROPDOWN ADMIN / PROFIL -->
           <div class="dropdown-wrapper">
             <div class="admin-dropdown" @click="toggleProfileMenu">
-              <span>👤 Admin</span>
+              <span>Admin</span>
               <span class="arrow">▾</span>
             </div>
             <div v-if="showProfileMenu" class="dropdown-card profile-dropdown">
@@ -92,16 +92,13 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// State interaksi
 const isSidebarOpen = ref(true)
 const showNotification = ref(false)
 const showProfileMenu = ref(false)
 
-// State Live Time
 const currentDateTime = ref('')
 let timer = null
 
-// State Notifikasi
 const notifications = ref([])
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const token = localStorage.getItem('token')
@@ -121,7 +118,6 @@ const updateLiveTime = () => {
   currentDateTime.value = now.toLocaleDateString('id-ID', options).replace(/\./g, ':')
 }
 
-// Ambil data notifikasi dari backend saat halaman dimuat atau saat lonceng diklik
 const fetchNotifications = async () => {
   try {
     const res = await fetch(`${API_BASE_URL}/admin/bookings`, {
@@ -148,8 +144,6 @@ const formatDate = (dateString) => {
 onMounted(() => {
   updateLiveTime()
   timer = setInterval(updateLiveTime, 1000)
-
-  // Ambil notifikasi sekali saat pertama kali dibuka
   fetchNotifications()
 })
 
@@ -157,12 +151,10 @@ onUnmounted(() => {
   clearInterval(timer)
 })
 
-// Toggle Sidebar
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
 }
 
-// Toggle Notifikasi (sekaligus memperbarui data saat lonceng diklik)
 const toggleNotification = () => {
   showNotification.value = !showNotification.value
   showProfileMenu.value = false
@@ -171,17 +163,43 @@ const toggleNotification = () => {
   }
 }
 
-// Toggle Profil Admin
 const toggleProfileMenu = () => {
   showProfileMenu.value = !showProfileMenu.value
   showNotification.value = false
 }
 
-// Logout
 const handleLogout = () => {
   router.push('/login')
 }
 </script>
+
+<style>
+/* Perbaikan CSS Global agar dokumen selalu mengizinkan fungsi scroll vertikal */
+html {
+  margin: 0;
+  padding: 0;
+  background-color: #f8fafc;
+  height: 100%;
+  overflow-y: scroll !important;
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f8fafc;
+  min-height: 100%;
+  overflow-y: auto !important; /* Menjamin body tidak pernah terkunci mati */
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none; 
+}
+</style>
 
 <style scoped>
 .admin-container {
@@ -254,6 +272,7 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-weight: bold;
 }
 
 .user-info { display: flex; flex-direction: column; font-size: 0.8rem; }
@@ -305,19 +324,24 @@ const handleLogout = () => {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #e2e8f0;
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
 .hamburger-btn { 
-  background: none; 
+  background: #ffffff; 
   border: 1px solid #cbd5e1; 
   border-radius: 6px; 
-  padding: 0.4rem 0.7rem; 
+  padding: 0.4rem 0.6rem; 
   cursor: pointer; 
-  font-size: 1rem;
+  font-size: 1.1rem;
+  color: #475569;
 }
 .hamburger-btn:hover {
   background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 .header-right { 
@@ -339,12 +363,14 @@ const handleLogout = () => {
   border: none;
   font-size: 1.1rem;
   cursor: pointer;
-  padding: 0.4rem;
+  padding: 0.4rem 0.6rem;
   border-radius: 6px;
   position: relative;
+  color: #475569;
 }
 .icon-btn:hover {
   background: #f1f5f9;
+  color: #0f172a;
 }
 
 .notif-badge {
@@ -373,6 +399,7 @@ const handleLogout = () => {
   cursor: pointer;
   font-weight: 500;
   color: #334155;
+  border: none;
 }
 .admin-dropdown:hover {
   background: #e2e8f0;
