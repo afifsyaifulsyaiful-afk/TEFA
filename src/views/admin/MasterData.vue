@@ -276,7 +276,9 @@ const submitEditBarber = async () => {
       },
       body: JSON.stringify({
         name: editBarberForm.value.name,
-        description: editBarberForm.value.description
+        Name: editBarberForm.value.name,
+        description: editBarberForm.value.description,
+        Description: editBarberForm.value.description
       })
     })
 

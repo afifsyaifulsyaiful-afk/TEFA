@@ -30,53 +30,57 @@
     <!-- Daftar Card Booking -->
     <div v-else class="booking-grid">
       <div 
-        v-for="item in bookings" 
-        :key="item.id" 
+        v-for="item in sortedBookings" 
+        :key="item.id || item.ID" 
         class="booking-card"
       >
         <div class="card-header">
-          <span class="service-name">Booking Barber: {{ item.barber?.name || item.barber_name || 'Barber' }}</span>
-          <span :class="['status-badge', getStatusClass(item.status)]">
-            {{ formatStatus(item.status) }}
+          <span class="service-name">Booking Barber: {{ item.barber?.name || item.Barber?.Name || item.barber_name || 'Barber' }}</span>
+          <span :class="['status-badge', getStatusClass(item.status || item.Status)]">
+            {{ formatStatus(item.status || item.Status) }}
           </span>
         </div>
 
         <div class="card-body">
           <div class="info-row">
             <span class="label">Barber:</span>
-            <span class="val">{{ item.barber?.name || item.barber_name || '-' }}</span>
+            <span class="val">{{ item.barber?.name || item.Barber?.Name || item.barber_name || '-' }}</span>
           </div>
           <div class="info-row">
-            <span class="label">Tanggal & Jam:</span>
-            <span class="val highlight">{{ formatDate(item.booking_time) }}</span>
+            <span class="label">Jadwal Cukur:</span>
+            <span class="val highlight">{{ formatDate(item.booking_time || item.BookingTime) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Waktu Dipesan:</span>
+            <span class="val">{{ formatDate(item.created_at || item.CreatedAt) }}</span>
           </div>
           <!-- Informasi Metode Pembayaran -->
           <div class="info-row payment-info">
             <span class="label">Metode Pembayaran:</span>
             <span class="val payment-method">
               Bayar Tunai di Kasir 
-              <small class="payment-status-tag" :class="item.status === 'completed' ? 'tag-paid' : 'tag-unpaid'">
-                ({{ item.status === 'completed' ? 'Lunas' : 'Bayar Setelah Cukur' }})
+              <small class="payment-status-tag" :class="(item.status || item.Status) === 'completed' ? 'tag-paid' : 'tag-unpaid'">
+                ({{ (item.status || item.Status) === 'completed' ? 'Lunas' : 'Bayar Setelah Cukur' }})
               </small>
             </span>
           </div>
         </div>
 
-        <!-- Footer Card: Batalkan Booking atau Beri Ulasan / Status Ulasan Terkirim -->
+        <!-- Footer Card -->
         <div class="card-footer">
           <!-- Tombol Batal jika masih pending / confirmed -->
-          <button v-if="item.status === 'pending' || item.status === 'confirmed'" class="btn-cancel" @click="cancelBooking(item.id || item.ID)">
+          <button v-if="(item.status || item.Status) === 'pending' || (item.status || item.Status) === 'confirmed'" class="btn-cancel" @click="cancelBooking(item.id || item.ID)">
             Batalkan Booking
           </button>
 
           <!-- Tombol Beri Ulasan jika sudah selesai (completed) dan belum direview -->
-          <button v-if="item.status === 'completed' && !item.review && !item.Review" class="btn-review" @click="openReviewModal(item)">
+          <button v-if="(item.status || item.Status) === 'completed' && !item.review && !item.Review" class="btn-review" @click="openReviewModal(item)">
             Beri Ulasan Barber
           </button>
 
           <!-- Keterangan jika sudah selesai dan sudah pernah di-review -->
-          <span v-if="item.status === 'completed' && (item.review || item.Review)" class="reviewed-tag">
-            Ulasan Telah Dikirim ({{ (item.review || item.Review).rating }} Bintang)
+          <span v-if="(item.status || item.Status) === 'completed' && (item.review || item.Review)" class="reviewed-tag">
+            Ulasan Telah Dikirim ({{ (item.review || item.Review).rating || (item.review || item.Review).Rating }} Bintang)
           </span>
         </div>
       </div>
@@ -86,7 +90,7 @@
     <div v-if="showReviewModal" class="modal-overlay">
       <div class="modal-content">
         <h3>Beri Ulasan untuk Barber</h3>
-        <p class="modal-subtitle">Bagikan pengalaman cukur rambut Anda bersama <strong>{{ selectedBookingForReview?.barber?.name || selectedBookingForReview?.barber_name || 'Barber' }}</strong></p>
+        <p class="modal-subtitle">Bagikan pengalaman cukur rambut Anda bersama <strong>{{ selectedBookingForReview?.barber?.name || selectedBookingForReview?.Barber?.Name || selectedBookingForReview?.barber_name || 'Barber' }}</strong></p>
         
         <form @submit.prevent="submitReview">
           <div class="form-group">
@@ -121,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Toast from '@/components/Toast.vue'
 
@@ -134,7 +138,6 @@ const bookings = ref([])
 const isLoading = ref(true)
 const errorMessage = ref('')
 
-// State untuk Modal Review
 const showReviewModal = ref(false)
 const selectedBookingForReview = ref(null)
 const reviewForm = ref({
@@ -154,7 +157,7 @@ const fetchMyBookings = async () => {
       return
     }
 
-    const response = await fetch(`${API_BASE_URL}/bookings/my`, {
+    const response = await fetch(`${API_BASE_URL}/bookings`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -174,22 +177,40 @@ const fetchMyBookings = async () => {
   }
 }
 
-// Format Tanggal ISO ke Bahasa Indonesia
+const sortedBookings = computed(() => {
+  return [...bookings.value].sort((a, b) => {
+    const statusA = (a.status || a.Status || '').toLowerCase()
+    const statusB = (b.status || b.Status || '').toLowerCase()
+
+    const isActiveA = statusA === 'pending' || statusA === 'confirmed'
+    const isActiveB = statusB === 'pending' || statusB === 'confirmed'
+
+    if (isActiveA && !isActiveB) return -1
+    if (!isActiveA && isActiveB) return 1
+
+    const timeA = new Date(a.created_at || a.CreatedAt || 0).getTime()
+    const timeB = new Date(b.created_at || b.CreatedAt || 0).getTime()
+    return timeB - timeA
+  })
+})
+
 const formatDate = (isoString) => {
   if (!isoString) return '-'
   const date = new Date(isoString)
+  if (isNaN(date.getTime())) return '-'
   return new Intl.DateTimeFormat('id-ID', {
     dateStyle: 'full',
     timeStyle: 'short'
   }).format(date)
 }
 
-// Styling Badge Status
 const getStatusClass = (status) => {
   switch (status?.toLowerCase()) {
     case 'pending': return 'badge-pending'
     case 'confirmed': return 'badge-confirmed'
     case 'completed': return 'badge-completed'
+    case 'rejected':
+    case 'declined': return 'badge-rejected'
     case 'cancelled': return 'badge-cancelled'
     default: return 'badge-default'
   }
@@ -200,19 +221,19 @@ const formatStatus = (status) => {
     case 'pending': return 'Menunggu Konfirmasi'
     case 'confirmed': return 'Dikonfirmasi'
     case 'completed': return 'Selesai'
+    case 'rejected':
+    case 'declined': return 'Ditolak Admin'
     case 'cancelled': return 'Dibatalkan'
     default: return status
   }
 }
 
-// Buka Modal Review
 const openReviewModal = (booking) => {
   selectedBookingForReview.value = booking
   reviewForm.value = { rating: 5, comment: '' }
   showReviewModal.value = true
 }
 
-// Kirim Ulasan ke Backend
 const submitReview = async () => {
   if (!selectedBookingForReview.value) return
 
@@ -250,7 +271,6 @@ const submitReview = async () => {
   }
 }
 
-// Batalkan Booking dengan Toast
 const cancelBooking = async (id) => {
   try {
     const token = localStorage.getItem('token')
@@ -400,6 +420,7 @@ h1 {
 .badge-pending { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; }
 .badge-confirmed { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #3b82f6; }
 .badge-completed { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid #22c55e; }
+.badge-rejected { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
 .badge-cancelled { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #ef4444; }
 
 .card-body {
@@ -506,7 +527,6 @@ h1 {
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
-/* Modal Styling */
 .modal-overlay {
   position: fixed;
   top: 0;

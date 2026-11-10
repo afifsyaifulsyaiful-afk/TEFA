@@ -67,7 +67,7 @@
                 <span :class="['badge', booking.status.toLowerCase()]">{{ booking.status }}</span>
               </td>
               <td>
-                <!-- Jika status PENDING, tampilkan tombol Tandai Selesai dan Tolak/Batal -->
+                <!-- Jika status PENDING, tampilkan tombol Tandai Selesai dan Tolak -->
                 <div v-if="booking.status === 'PENDING'" class="action-buttons">
                   <button 
                     @click="updateBookingStatus(booking.rawId, 'completed')"
@@ -75,7 +75,7 @@
                     Tandai Selesai
                   </button>
                   <button 
-                    @click="updateBookingStatus(booking.rawId, 'cancelled')"
+                    @click="updateBookingStatus(booking.rawId, 'rejected')"
                     class="btn-action-cancel">
                     Tolak / Batal
                   </button>
@@ -86,9 +86,9 @@
                   Selesai
                 </span>
 
-                <!-- Jika status CANCELLED / BATAL -->
-                <span v-else-if="booking.status === 'CANCELLED' || booking.status === 'BATAL'" class="text-cancelled">
-                  Dibatalkan
+                <!-- Jika status REJECTED / CANCELLED -->
+                <span v-else-if="booking.status === 'REJECTED' || booking.status === 'CANCELLED' || booking.status === 'BATAL'" class="text-cancelled">
+                  Ditolak / Dibatalkan
                 </span>
 
                 <!-- Default status lainnya -->
@@ -145,7 +145,6 @@ const fetchDashboardStats = async () => {
     const result = await response.json()
 
     if (response.ok) {
-      // Memetakan langsung dari root object JSON backend
       stats.value.totalCustomers = result.total_pelanggan || result.total_customers || 0
       stats.value.totalBookings = result.total_booking || result.total_bookings || 0
       stats.value.totalServices = result.total_layanan || result.total_services || 0
@@ -249,8 +248,8 @@ const updateBookingStatus = async (id, newStatus) => {
     })
 
     if (response.ok) {
-      const msg = newStatus === 'cancelled' 
-        ? 'Booking berhasil dibatalkan.' 
+      const msg = newStatus === 'rejected' 
+        ? 'Booking berhasil ditolak.' 
         : 'Booking berhasil ditandai sebagai selesai.'
       toastRef.value?.triggerToast(msg, 'success')
       
@@ -410,7 +409,7 @@ onMounted(() => {
   color: #b45309;
 }
 
-.badge.cancelled, .badge.batal {
+.badge.cancelled, .badge.rejected, .badge.batal {
   background-color: #fee2e2;
   color: #dc2626;
 }

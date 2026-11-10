@@ -177,32 +177,17 @@ const fetchFinancialReports = async () => {
 
     if (response.ok) {
       const data = result.data || result
+      
+      // Filter status booking yang sah untuk laporan (completed / confirmed)
       const finished = data.filter(item => {
-        const status = (item.Status || item.status || '').toUpperCase()
-        return status === 'COMPLETED' || status === 'DONE' || status === 'SELESAI'
+        const status = (item.Status || item.status || '').toLowerCase()
+        return status === 'completed' || status === 'confirmed' || status === 'done' || status === 'selesai'
       })
 
+      // Tarif flat standar per booking (misal Rp 50.000)
+      const standardPrice = 50000
+
       completedTransactions.value = finished.map((item, idx) => {
-        let serviceName = '-'
-        let price = 0
-        const s = item.Service || item.service
-
-        if (typeof s === 'object' && s !== null) {
-          serviceName = s.name || s.Name || '-'
-          price = s.price || s.Price || 0
-        } else if (typeof s === 'string' && s.startsWith('{')) {
-          try {
-            const parsed = JSON.parse(s)
-            serviceName = parsed.name || '-'
-            price = parsed.price || 0
-          } catch (e) {
-            serviceName = s
-          }
-        } else {
-          serviceName = item.service_name || s || '-'
-          price = item.price || item.Price || 0
-        }
-
         let customerName = '-'
         const u = item.User || item.user
         if (typeof u === 'object' && u !== null) {
@@ -228,9 +213,9 @@ const fetchFinancialReports = async () => {
           id: item.ID || item.id || idx,
           date: formattedDate,
           customer: customerName,
-          service: serviceName,
+          service: 'Standard Haircut', // Label layanan default
           barber: barberName,
-          price: price
+          price: standardPrice // Menggunakan harga flat seragam
         }
       })
     } else {
